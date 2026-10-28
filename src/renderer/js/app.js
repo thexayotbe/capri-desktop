@@ -9,6 +9,7 @@ import { Mission } from './mission.js';
 import { Chat } from './chat.js';
 import { Setup } from './setup.js';
 import { Custom } from './custom.js';
+import { MacLife } from './mac-life.js';
 import { linesFor } from './lines.js';
 import { pick, fmt, reducedMotion } from './util.js';
 
@@ -226,6 +227,8 @@ async function boot() {
   const custom = new Custom({ guide, host, brain, capri, voice });
   guide.custom = custom;
   brain.custom = mine(config);
+  // More life (mac-life.js): app switches, music, the time of day, your computer, her screen takeover
+  const life = new MacLife({ capri, panel, fx, voice, host, brain, guide });
   // the first Claude Code event that ever reaches her: so you know it worked
   brain.linked = config.linked;
   brain.watching = config.claude !== false;

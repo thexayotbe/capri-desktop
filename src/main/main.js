@@ -21,6 +21,7 @@ const { ASSISTANTS, assistant } = require('./assistants');
 const activeAssistant = () => assistant(config.load().assistant); // Claude Code or Codex
 const activeHooks = () => activeAssistant().hooks;
 const demoSteps = require('../../scripts/demo-sequence');
+const macLife = require('./mac-life'); // behaviour: app switches, music, charger, network, CPU
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const DEV = process.argv.includes('--dev');
@@ -339,6 +340,7 @@ function rebuildTray() {
     },
     { label: t.wander, type: 'checkbox', checked: cfg.wander, click: (item) => updateConfig({ wander: item.checked }) },
     { label: t.possess, type: 'checkbox', checked: cfg.possess, click: (item) => updateConfig({ possess: item.checked }) },
+    ...macLife.trayItems(resolveLang(cfg.lang), { command: sendCommand, update: updateConfig }),
     {
       label: t.rest,
       submenu: [['corner', t.restCorner], ['taskbar', t.restTaskbar]].map(([rest, label]) => ({
@@ -767,6 +769,8 @@ function main() {
     registerIpc();
     createOverlay();
     createTray();
+    macLife.startMacLife({ overlay: () => overlay, config });
+    rebuildTray(); // her menu, with its entries
     windowWatch = startWindowWatch({
       overlay,
       onUpdate: (data) => {
@@ -797,6 +801,7 @@ function main() {
   app.on('will-quit', () => {
     globalShortcut.unregisterAll();
     windowWatch?.stop();
+    macLife.stopMacLife();
   });
   app.on('window-all-closed', (e) => e.preventDefault());
 }
