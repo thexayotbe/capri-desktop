@@ -1,0 +1,233 @@
+{
+  "_doc": "Capri's voice pack: key -> takes. text goes to ElevenLabs v3 as is (audio tags in [brackets]); stab = v3 stability (0 creative, 0.5 natural). stutter: null = one picked from the word timings, [] = none, [[word index, grain s, repeats]] = by hand. tools/voice/build.sh fetches missing takes, then process.mjs makes assets/voice/<key>/NN.ogg + assets/voice/lines.json.",
+  "voice_id": "cgSgspJ2msm6clMCkdW9",
+  "voice_name": "Jessica (ElevenLabs premade: young, playful, bright)",
+  "model_id": "eleven_v3",
+  "keys": {
+    "hello": [
+      {"text": "[cheerfully] hi, choom!"},
+      {"text": "[playfully] miss me? course you did."},
+      {"text": "[whispers] found you again, choom."},
+      {"text": "we're back online. hi!"}
+    ],
+    "teleport": [
+      {"text": "[giggles] blink and I'm gone."},
+      {"text": "rerouting... boo!"},
+      {"text": "[playfully] new coordinates."}
+    ],
+    "wake": [
+      {"text": "[yawns] mmh... rebooting."},
+      {"text": "systems up. what'd I miss, choom?"},
+      {"text": "[whispers] I wasn't asleep. I was listening."}
+    ],
+    "sleep": [
+      {"text": "[sighs] going dark for a bit."},
+      {"text": "[whispers] wake me if something breaks."},
+      {"text": "powering down... nighty-night, choom."}
+    ],
+    "mouse-near": [
+      {"text": "[curious] hm? whatcha doing, choom?"},
+      {"text": "[whispers] I see you."},
+      {"text": "careful. I bite."}
+    ],
+    "zap-cursor": [
+      {"text": "[mischievously] zap."},
+      {"text": "[giggles] bzzt! gotcha."},
+      {"text": "keep your cursor to yourself."}
+    ],
+    "grabbed": [
+      {"text": "hey! hands off, choom!"},
+      {"text": "[surprised] whoa! put me down!"},
+      {"text": "[giggles] that tickles."}
+    ],
+    "thrown": [
+      {"text": "[shouts] wheeee!"},
+      {"text": "[shouts] you'll pay for this!"},
+      {"text": "aaah! rude!"}
+    ],
+    "crash-wall": [
+      {"text": "[groans] ow. that's a firewall."},
+      {"text": "ow! who put that there?"},
+      {"text": "[dizzy] seeing double... triple."}
+    ],
+    "caught": [
+      {"text": "[giggles] nice catch, choom."},
+      {"text": "hah! saved."},
+      {"text": "my hero. don't let it go to your head."}
+    ],
+    "angry": [
+      {"text": "[angry] okay. now I'm mad."},
+      {"text": "[menacing] do that again. I dare you."},
+      {"text": "[angry] I will fry your drivers."}
+    ],
+    "claude-working": [
+      {"text": "Claude's cooking. I'm watching."},
+      {"text": "[whispers] shh. it's working."},
+      {"text": "lines going in, choom. busy busy."}
+    ],
+    "claude-thinking-long": [
+      {"text": "[sighs] still thinking? ugh."},
+      {"text": "it's chewing on a big one."},
+      {"text": "[bored] tick... tock... tick..."}
+    ],
+    "claude-needs-you": [
+      {"text": "choom! Claude needs you. now."},
+      {"text": "[urgent] hey! it's asking for permission!"},
+      {"text": "eyes over here, choom. it's waiting on you."},
+      {"text": "[whispers] psst. your turn."}
+    ],
+    "claude-error": [
+      {"text": "[laughs] oops. something broke."},
+      {"text": "error! [giggles] not my fault. probably."},
+      {"text": "[sarcastic] flatlined. nice."}
+    ],
+    "claude-done": [
+      {"text": "[smug] done. told you we're good."},
+      {"text": "[laughs] flawless. as always."},
+      {"text": "job's done, choom. you're welcome."},
+      {"text": "[mischievously] too easy. next!"}
+    ],
+    "victory-laugh": [
+      {"text": "[laughs maniacally] ahahahaha!", "stab": 0},
+      {"text": "[giggles] hehehe!", "stab": 0},
+      {"text": "[laughs] ahaha! preem!", "stab": 0}
+    ],
+    "satellite": [
+      {"text": "[softly] look... it's up there."},
+      {"text": "[whispers] one day I'll reach it."},
+      {"text": "there it is. our satellite."}
+    ],
+    "usb-in": [
+      {"text": "ooh, new hardware. let me in."},
+      {"text": "[curious] what's this? a snack?"},
+      {"text": "[mischievously] plugged in. I'm in it now."}
+    ],
+    "device-in": [
+      {"text": "new device. hi, little thing."},
+      {"text": "[curious] something connected. scanning..."},
+      {"text": "another toy for me?"}
+    ],
+    "game-start": [
+      {"text": "[excited] game time! don't die, choom."},
+      {"text": "ooh, playing? I'll backseat."},
+      {"text": "go get 'em. I'll watch."}
+    ],
+    "game-end": [
+      {"text": "gg, choom. kinda."},
+      {"text": "[giggles] done already?"},
+      {"text": "that was... a performance."}
+    ],
+    "cpu-hot": [
+      {"text": "[panting] it's getting hot in here."},
+      {"text": "your CPU's sweating, choom."},
+      {"text": "[whispers] I can hear the fans screaming."}
+    ],
+    "charger-in": [
+      {"text": "[sighs happily] ahh... juice."},
+      {"text": "power flowing. mmm, preem."},
+      {"text": "plugged in. that's the stuff."}
+    ],
+    "charger-out": [
+      {"text": "hey! I was drinking that."},
+      {"text": "unplugged? rude."},
+      {"text": "[gasps] cut the power, huh?"}
+    ],
+    "battery-low": [
+      {"text": "[weakly] choom... I'm fading..."},
+      {"text": "[sighs] battery's dying... plug me in..."},
+      {"text": "[tired] so... low... on juice..."}
+    ],
+    "net-down": [
+      {"text": "[gasps] the net's gone! I'm blind!"},
+      {"text": "connection lost. who did that?"},
+      {"text": "[whispers] all alone in here now."}
+    ],
+    "net-up": [
+      {"text": "back on the net. hehe."},
+      {"text": "connection restored. I can breathe."},
+      {"text": "online again, choom. preem."}
+    ],
+    "possess-window": [
+      {"text": "[mischievously] this window's mine now."},
+      {"text": "[whispers] let me in... let me in."},
+      {"text": "[giggles] I live here now."}
+    ],
+    "window-sit": [
+      {"text": "nice ledge."},
+      {"text": "comfy. don't move this one."},
+      {"text": "[playfully] I'll just sit here."}
+    ],
+    "window-fall": [
+      {"text": "[shouts] whoa! hey!"},
+      {"text": "you moved my seat!"},
+      {"text": "[groans] rude. I was sitting there."}
+    ],
+    "app-switch": [
+      {"text": "ooh, what's this one?"},
+      {"text": "new window. whatcha up to?"}
+    ],
+    "app-switch-browser": [
+      {"text": "browsing again? I'm watching."},
+      {"text": "[whispers] I see your tabs, choom."},
+      {"text": "don't fall down a rabbit hole."}
+    ],
+    "app-switch-code": [
+      {"text": "code time. let's break something."},
+      {"text": "ooh, the editor. my favorite."},
+      {"text": "write something nice. or don't."}
+    ],
+    "app-switch-chat": [
+      {"text": "who are you talking to? hm?"},
+      {"text": "[jealous] chatting with someone else?"},
+      {"text": "tell them I said hi."}
+    ],
+    "music-start": [
+      {"text": "ooh, music! turn it up."},
+      {"text": "[excited] I love this one."},
+      {"text": "beats incoming. preem."}
+    ],
+    "music-dance": [
+      {"text": "[giggles] can't stop. won't stop."},
+      {"text": "dance with me, choom!"},
+      {"text": "[sings] la la la, la la!", "stab": 0}
+    ],
+    "music-stop": [
+      {"text": "hey, I was dancing!"},
+      {"text": "aww. silence again."}
+    ],
+    "morning": [
+      {"text": "[yawns] morning, choom. coffee first."},
+      {"text": "rise and shine. the net's awake."},
+      {"text": "good morning! let's break things."}
+    ],
+    "afternoon": [
+      {"text": "afternoon slump? I'm still glitching."},
+      {"text": "half the day gone. keep going, choom."}
+    ],
+    "evening": [
+      {"text": "evening, choom. Night City's waking up."},
+      {"text": "sun's down. my time."},
+      {"text": "getting late. wrap it up?"}
+    ],
+    "late-night": [
+      {"text": "[whispers] it's late, choom. go to sleep."},
+      {"text": "still up? me too. always."},
+      {"text": "three AM thoughts, huh?"}
+    ],
+    "summoned": [
+      {"text": "you called?"},
+      {"text": "[playfully] at your service, choom."},
+      {"text": "here! what's up?"}
+    ],
+    "screen-possess": [
+      {"text": "[laughs maniacally] your screen is mine!", "stab": 0},
+      {"text": "[whispers] shh. don't look away."},
+      {"text": "[menacing] this whole system is mine now."}
+    ],
+    "fullscreen-app": [
+      {"text": "fullscreen? I'll be quiet. promise."},
+      {"text": "[whispers] I'll hide for a bit."},
+      {"text": "big screen time. I'll wait."}
+    ]
+  }
+}

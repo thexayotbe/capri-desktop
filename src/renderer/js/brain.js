@@ -2,6 +2,7 @@
 
 import { linesFor, ASSISTANT_NAMES } from './lines.js';
 import { pick, fmt, duration, basename, rand } from './util.js';
+import { say } from './speech.js';
 
 const EDIT_TOOLS = new Set(['Write', 'Edit', 'MultiEdit', 'NotebookEdit']);
 const HACKING_TOOLS = new Set(['Bash', 'PowerShell', 'WebFetch', 'WebSearch', 'Agent', 'Task']);
@@ -138,6 +139,7 @@ export class Brain {
     this.capri.goToWork(); // perched on the window in front if she can, else her corner
     const prompt = String(evt.prompt || '').replace(/\s+/g, ' ').trim();
     this.say('work', pick(this.t.prompt), s, { quote: prompt ? clip(prompt, 110) : '', hold: 4500 });
+    say('claude-working');
     this.watchThinking();
   }
 
@@ -182,6 +184,7 @@ export class Brain {
     }
     if (th.said < 2 && quiet >= THINK_LONG) {
       th.said = 2;
+      say('claude-thinking-long');
       this.say('info', pick(t.long), s, { face: 'smug', quote: t.longHow, hold: 8000 });
     }
   }
@@ -207,6 +210,7 @@ export class Brain {
     this.panel.setTicker(action);
     if (this.panel.current?.kind === 'work') this.panel.updateLog(s.log);
     if (s.count % WORKING_EVERY === 0) {
+      say('claude-working');
       this.say('work', fmt(pick(this.t.working), { count: s.count }), s, { log: s.log, hold: 4000 });
     }
   }
@@ -224,6 +228,7 @@ export class Brain {
     this.tally(evt)?.error();
     this.capri.hurt();
     this.voice.play('error');
+    say('claude-error');
     this.say('error', fmt(pick(this.t.error), { tool: evt.tool_name || this.t.someTool }), s, {
       face: pick(['laugh', 'wide']), // a failure: she laughs at the chaos, or it caught her off guard
       log: [action, { verb: '✕', target: clip(firstLine, 70), error: true }],
@@ -238,6 +243,7 @@ export class Brain {
       this.tally(evt)?.approval();
       this.capri.setMode('alert');
       this.voice.play('alert');
+      say('claude-needs-you');
       // you're on another window: she goes and points at Claude's, where the question is
       const win = this.away(s) && this.capri.windows.wins.find((w) => w.id === s.window);
       if (win && this.capri.canPoint(win)) {
@@ -299,7 +305,12 @@ export class Brain {
     const bigJob = s.count >= 3 || (s.taskStart && Date.now() - s.taskStart > 20000);
     if (bigJob) await this.capri.teleport(this.capri.spot('stage'));
     // the panel comes in once she's back down from her victory pose
-    this.capri.celebrate({ onSpeak: () => done({ summary, hold: 14000 }) });
+    this.capri.celebrate({
+      onSpeak: () => {
+        say('claude-done'); // gloating, as the panel comes in
+        done({ summary, hold: 14000 });
+      },
+    });
     // a long one: she'll send the red light up to the satellite once it's all quiet
     if ((s.taskStart && Date.now() - s.taskStart >= LONG_JOB_MS) || s.count >= LONG_JOB_ACTIONS) this.capri.earnUplink();
   }
@@ -327,6 +338,7 @@ export class Brain {
     }
     this.capri.hurt();
     this.voice.play('error');
+    say('claude-error');
     const detail = evt.error || evt.message || '';
     this.say('error', pick(this.t.crashed), s, { face: 'wide', quote: clip(String(detail), 120), hold: 9000 });
   }

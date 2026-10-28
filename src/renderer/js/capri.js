@@ -8,6 +8,7 @@
 import { SpriteRenderer, SPRITE } from './sprite.js';
 import { ACTS, NEUTRAL, Player } from './acting.js';
 import { sleep, rand, pick, clamp, lerp, ease, tween, reducedMotion, today } from './util.js';
+import { say } from './speech.js';
 
 const ON_TWOS = 1000 / 12;
 const ON_ONES = 1000 / 24;
@@ -529,6 +530,7 @@ export class Capri {
     const prev = this.mode;
     this.mode = mode;
     if (mode === 'sleep') this.sleptAt = now;
+    if (mode === 'sleep' || prev === 'sleep') say(mode === 'sleep' ? 'sleep' : 'wake');
     this.onMode?.(mode, prev);
     if (this.stance === 'stand') this.base = this.restBase();
     const p = this.p;
@@ -657,6 +659,7 @@ export class Capri {
     // from her fingertips to it
     const road = () => [this.limb(side).hand, sat.pos()];
     this.sky = { sat, road, dir, side, motes: null, surge: null, head: null };
+    say('satellite');
     if (!big) this.onGaze?.('start');
     this.perform(big ? 'uplink' : 'gaze', dir, { reach }).then(() => {
       this.clearSky();
@@ -740,6 +743,7 @@ export class Capri {
       return clamp(Math.atan2(sh.y - y, Math.abs(x - sh.x)) + 0.52, -0.3, 1.6);
     };
     this.zapAt = { x, y, side, dir };
+    say('zap-cursor');
     this.perform('zap', dir, { reach });
     return true;
   }
@@ -792,6 +796,7 @@ export class Capri {
         this.fireSpeak();
         break;
       case 'laugh':
+        say('victory-laugh');
         this.fx.cutin(...this.cutinAt(this.act?.player.dir || this.towardCenter()), { kind: pick(['laugh', 'grin']) });
         break;
       case 'stare': // every eye she has, on you
@@ -1050,6 +1055,7 @@ export class Capri {
     this.busy = true;
     this.wake();
     this.onTeleport?.('start');
+    say('teleport');
     const fromHead = await this.vanish();
     await sleep(70);
     await this.arrive(to, { ...opts, fromHead });
@@ -1149,6 +1155,7 @@ export class Capri {
     this.dormant = false;
     this.busy = true;
     this.onDoze?.('waking');
+    say('wake');
     if (this.mode === 'sleep') this.setMode('idle');
     this.lastActivity = performance.now();
     await sleep(reducedMotion.matches ? 0 : 280);
@@ -1230,6 +1237,7 @@ export class Capri {
     this.voice.play('bolt');
     await sleep(300);
     this.voice.play('possess');
+    say('possess-window');
     await sleep(1600);
     taken.leave();
     await sleep(260);
@@ -1449,7 +1457,10 @@ export class Capri {
         else if (cue === 'grab') {
           this.voice.play('land'); // she slams into it
           this.voice.play('bolt');
-        } else if (cue === 'hi') this.voice.play('hello');
+        } else if (cue === 'hi') {
+          this.voice.play('hello');
+          say('hello');
+        }
         else if (cue === 'slip') this.voice.play('teleport-out');
       },
     });
@@ -1573,6 +1584,10 @@ export class Capri {
         const dx = e.clientX - down.x, dy = e.clientY - down.y;
         if (!this.dragging && Math.hypot(dx, dy) > 5 && !this.busy) {
           this.dragging = true;
+          // grabbed (caught, if she was falling); grabbed again and again, she's had enough
+          const now = performance.now();
+          this.grabs = [...(this.grabs || []).filter((t) => now - t < 20000), now];
+          say(this.stance === 'fall' ? 'caught' : this.grabs.length >= 3 ? 'angry' : 'grabbed');
           if (this.upside) {
             // flip back upright under the pointer
             down.pos = { x: down.pos.x, y: down.y + (SPRITE.feet.y - SPRITE.head.y) * this.scale };
@@ -1624,8 +1639,10 @@ export class Capri {
       this.voice.play('land');
       return;
     }
-    if (this.pos.y < this.floor - 2) this.fall();
-    else this.perform('land');
+    if (this.pos.y < this.floor - 2) {
+      say('thrown');
+      this.fall();
+    } else this.perform('land');
   }
 
   // When the pointer comes close she turns around to face it and cocks her head;
@@ -1638,6 +1655,7 @@ export class Capri {
     if (this.mode === 'sleep') this.wake();
     if (now < this.nextNotice) return;
     this.nextNotice = now + 15000;
+    say('mouse-near');
     if (this.stance === 'peek') {
       this.unpeek({ shy: true });
       return;
