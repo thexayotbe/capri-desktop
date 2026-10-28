@@ -18,6 +18,8 @@ const GRAVITY = 2600; // px/s²
 const THIGH = 73;     // hip to knee, sprite px (see sprite.js)
 
 const UPLINK_DAY = 'capri.uplinkDay'; // the last day she sent the red light up
+// one of her lines by key (CONTRACT.md): whoever voices them listens for it
+const say = (key) => document.dispatchEvent(new CustomEvent('capri:say', { detail: { key } }));
 
 const GREEN = [0.21, 1, 0.48];
 const INK = [0.08, 0.06, 0.11];
@@ -240,6 +242,7 @@ export class Capri {
     const win = this.perchWin(this.perch.id);
     const dx = win ? clamp(this.perch.dx, 50, win.w - 60) : 0;
     if (!win || !this.canSit(win) || this.covered(win, win.x + dx)) {
+      if (this.perch.id !== 'taskbar') say('window-fall');
       this.fall(); // the ledge is gone (closed, minimized, maximized or covered)
       return;
     }
@@ -1189,6 +1192,7 @@ export class Capri {
   }
 
   sitOn({ win, dx }) {
+    if (win.id !== 'taskbar') say('window-sit');
     return this.teleport(this.seat(win, dx), { stance: 'sit', perch: { id: win.id, dx }, face: this.facing });
   }
 
