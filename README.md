@@ -10,6 +10,60 @@ glitches, comments on every action, comes to find you when it needs your permiss
 
 ![Teleport, frame by frame](docs/teleport.png)
 
+## macOS fork
+
+This is a fork of [mochiiwuff/capri-desktop](https://github.com/mochiiwuff/capri-desktop) (all the credit for Capri
+goes to mochiiwuff), on the `mac-features` branch, with extra life for macOS. Run it from the source
+(`npm install && npm start`, see [Install](#from-the-source-macos-linux-developers)).
+
+**What it adds**
+
+- **She lives on your Mac**: sits on your windows and falls when they close or move (a small Swift helper reading
+  CGWindowList), on every Space and over full-screen apps, no Dock icon (she's in the menu bar).
+- **Her voice**: a spoken line for every reaction (`assets/voice/`, made with ElevenLabs), on top of her synth sounds.
+- **She notices what you're on**: browser, code / terminal, chat apps (a look, a word, now and then, rate-limited);
+  a full-screen app; a game or launcher coming up (Steam, Epic, CrossOver, Battle.net, GOG, Heroic...) and quitting.
+- **She dances to your music** when Spotify or Music is playing. They're only asked when already running, never launched.
+- **The time of day**: one greeting per morning / afternoon / evening / late night; sleepier after midnight.
+- **Your computer**: charger in / out, low battery, network down / up, CPU running hot, a USB device plugged in, a disk
+  mounted (disk images left out).
+- **Screen possession**: every 20-40 minutes she takes over the whole screen for 2-4 seconds (RGB-split glitch,
+  "CAPRI ONLINE."). Click-through, it never blocks anything.
+- **More to do when idle**: stretches, yawns, eyes on your pointer, following it a little, peeking out from behind a
+  window, short hops. Throw her hard at a side of the screen and she slams into it.
+
+**Shortcuts**: `⌃⌥C` (Ctrl+Option+C) calls her to the pointer; `⌃⌥⇧C` (Ctrl+Option+Shift+C) puts her away / brings
+her back.
+
+**Toggles** (right-click her, or her menu-bar icon): *Sound › Her voice / Voice volume / Chattiness*, *Summon her to the
+pointer* (pick or turn off the shortcut), *Possess the screen* (now), *Take over the screen now and then*,
+*Dance to my music*, plus the upstream ones (wander, possess my windows, rest, motion...).
+
+**Permissions macOS may ask for**
+
+- **Automation** (“Capri / Electron wants to control Spotify / Music”), the first time she checks what's playing.
+  Say no and she just won't dance (she tells you once); change it later in *System Settings › Privacy & Security ›
+  Automation*, or turn off *Dance to my music*.
+- Nothing else: the window helper needs neither Accessibility nor Screen Recording, USB / disk detection uses IOKit /
+  NSWorkspace notifications without a permission.
+
+**Regenerating her voice** (needs an [ElevenLabs](https://elevenlabs.io) API key, `ffmpeg` with libopus): the lines and
+the voice id are in `tools/voice/lines.json`. Put your key in a file outside the repo (never commit it), then
+
+```bash
+tools/voice/tts.sh /path/to/elevenlabs-key.txt [key ...]   # fetches only the missing takes into tools/voice/raw/ (git-ignored)
+node tools/voice/process.mjs [key ...]                     # trims, stutters, encodes them into assets/voice/<key>/NN.ogg
+```
+
+Delete a take in `tools/voice/raw/<key>/` to re-take it.
+
+For testing, `npm run dev` adds `--dev` routes on `127.0.0.1:47823`: `POST /debug/say {"key":"…"}`,
+`/debug/helper` (fake app switches, quits, USB devices, disks), `/debug/state`, and `/debug/command` with
+`{"name":"macLife","do":"pc"|"music"|"react"|"greet"|"idle"|"state",…}`. `CAPRI_PORT` and `CAPRI_USER_DATA` run a second
+copy next to your own.
+
+Same license as upstream: [PolyForm Noncommercial 1.0.0](LICENSE), free, never for sale.
+
 ## What she does
 
 - **When she starts**: she grabs your screen. Its edges crackle red, her left hand slams onto its edge, then her
