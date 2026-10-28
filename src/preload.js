@@ -60,4 +60,8 @@ contextBridge.exposeInMainWorld('host', {
   music: (query) => ipcRenderer.invoke('apps:music', query),
   openSite: (address) => ipcRenderer.invoke('apps:site', address),
   focusOverlay: (on) => ipcRenderer.send('overlay:focus', Boolean(on)),
+  // behaviour (mac-life.js): the app in front, the music playing, the charger / network / CPU
+  onAppSwitch: on('capri:app-switch'),
+  onMusic: on('capri:music'),
+  onPc: on('capri:pc'),
 });
