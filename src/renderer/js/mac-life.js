@@ -127,6 +127,10 @@ const LINES = {
     'net-down': ['The Net’s gone. I can’t reach anything.', 'Connection lost. We’re flatlined out here.'],
     'net-up': ['Back on the Net.', 'Link restored. Missed me?'],
     'cpu-hot': ['Your CPU’s running hot. Something’s chewing on it.', 'Getting toasty in here.'],
+    'game-start': ['Game time? I call next round.', 'Ooh, are we playing? Don’t die.'],
+    'game-end': ['Done playing? Did you win?', 'Back to work, choom.'],
+    'usb-in': ['Something just plugged into you. Ticklish.', 'New hardware! Let me sniff it.'],
+    'device-in': ['A new drive. What’s on it?', 'Oh, a disk. Can I look inside?'],
   },
   fr: {
     'app-switch': ['Ah, celle-là.', 'Nouvelle fenêtre, nouveaux ennuis.', 'On va où, maintenant ?'],
@@ -148,6 +152,10 @@ const LINES = {
     'net-down': ['Plus de Net. Je ne joins plus rien.', 'Connexion perdue. Flatline.'],
     'net-up': ['De retour sur le Net.', 'Liaison rétablie. Je t’ai manqué ?'],
     'cpu-hot': ['Ton processeur chauffe. Quelque chose le ronge.', 'Il commence à faire chaud ici.'],
+    'game-start': ['On joue ? Je prends la prochaine partie.', 'Oh, on joue ? Ne meurs pas.'],
+    'game-end': ['Fini de jouer ? Tu as gagné ?', 'Retour au boulot, choom.'],
+    'usb-in': ['Quelque chose vient de se brancher. Ça chatouille.', 'Du nouveau matos ! Laisse-moi renifler.'],
+    'device-in': ['Un nouveau disque. Qu’est-ce qu’il y a dessus ?', 'Oh, un disque. Je peux regarder dedans ?'],
   },
   es: {
     'app-switch': ['Ah, esa.', 'Ventana nueva, problemas nuevos.', '¿Adónde vamos ahora?'],
@@ -169,6 +177,10 @@ const LINES = {
     'net-down': ['Se fue la Red. No llego a nada.', 'Conexión perdida. Flatline.'],
     'net-up': ['De vuelta en la Red.', 'Enlace restablecido. ¿Me echabas de menos?'],
     'cpu-hot': ['Tu CPU está ardiendo. Algo la está masticando.', 'Hace calor aquí dentro.'],
+    'game-start': ['¿Hora de jugar? Me pido la siguiente.', '¿Jugamos? No te mueras.'],
+    'game-end': ['¿Ya no juegas? ¿Ganaste?', 'De vuelta al trabajo, choom.'],
+    'usb-in': ['Algo se te acaba de enchufar. Cosquillas.', '¡Hardware nuevo! Déjame olerlo.'],
+    'device-in': ['Un disco nuevo. ¿Qué tiene dentro?', 'Oh, un disco. ¿Puedo mirar?'],
   },
   pt: {
     'app-switch': ['Ah, essa.', 'Janela nova, problema novo.', 'Pra onde vamos agora?'],
@@ -190,6 +202,10 @@ const LINES = {
     'net-down': ['A Rede caiu. Não alcanço nada.', 'Conexão perdida. Flatline.'],
     'net-up': ['De volta à Rede.', 'Link restabelecido. Sentiu minha falta?'],
     'cpu-hot': ['Sua CPU está esquentando. Algo está mastigando ela.', 'Está ficando quente aqui.'],
+    'game-start': ['Hora do jogo? A próxima é minha.', 'Opa, vamos jogar? Não morre.'],
+    'game-end': ['Parou de jogar? Ganhou?', 'De volta ao trabalho, choom.'],
+    'usb-in': ['Alguma coisa acabou de ser conectada. Faz cócegas.', 'Hardware novo! Deixa eu farejar.'],
+    'device-in': ['Um disco novo. O que tem nele?', 'Opa, um disco. Posso olhar dentro?'],
   },
   ru: {
     'app-switch': ['А, это.', 'Новое окно — новые проблемы.', 'Куда теперь?'],
@@ -211,6 +227,10 @@ const LINES = {
     'net-down': ['Сети нет. Никуда не достучаться.', 'Связь потеряна. Флэтлайн.'],
     'net-up': ['Снова в Сети.', 'Связь восстановлена. Скучал?'],
     'cpu-hot': ['Процессор греется. Что-то его грызёт.', 'Жарковато тут.'],
+    'game-start': ['Играем? Следующий раунд мой.', 'О, играем? Не умирай.'],
+    'game-end': ['Наигрался? Выиграл?', 'Обратно к работе, чумба.'],
+    'usb-in': ['Что-то в тебя воткнули. Щекотно.', 'Новое железо! Дай понюхать.'],
+    'device-in': ['Новый диск. Что на нём?', 'О, диск. Можно заглянуть?'],
   },
 };
 
@@ -252,6 +272,8 @@ export class MacLife {
     host.getConfig().then((cfg) => this.configure(cfg));
     host.onConfig((cfg) => this.configure(cfg));
     host.onAppSwitch?.((evt) => this.onAppSwitch(evt));
+    // the first app switch usually went out before she was listening
+    host.frontApp?.().then((evt) => evt && !this.front && this.onAppSwitch(evt, { quietly: true })).catch(() => {});
     host.onMusic?.((msg) => this.onMusic(msg));
     host.onPc?.((evt) => this.onPc(evt));
     host.onCommand((cmd) => this.onCommand(cmd));
@@ -318,8 +340,8 @@ export class MacLife {
   }
 
   // The contract's voice event, always; a line in her panel if asked and nothing else is on it.
-  say(key, vars = {}, { line = true, hold = 3800, face } = {}) {
-    document.dispatchEvent(new CustomEvent('capri:say', { detail: { key } }));
+  say(key, vars = {}, { line = true, hold = 3800, face, voice = true } = {}) {
+    if (voice) document.dispatchEvent(new CustomEvent('capri:say', { detail: { key } }));
     const lines = this.lines(key);
     if (!line || !lines || this.panel.visible) return;
     this.panel.say({ kind: 'info', line: fmt(pick(lines), vars), hold, face });
@@ -368,7 +390,8 @@ export class MacLife {
 
   // ---------- 1. the app in front ----------
 
-  onAppSwitch(evt) {
+  // quietly: what was in front when she started, no reaction to it
+  onAppSwitch(evt, { quietly = false } = {}) {
     if (!evt) return;
     const now = performance.now();
     const same = this.front && this.front.bundleId === evt.bundleId && this.front.name === evt.name;
@@ -384,6 +407,8 @@ export class MacLife {
       this.onFullscreen();
       return;
     }
+    // a game: main.js sends game-start for it (capri:pc)
+    if (quietly || evt.game) return;
     // not on every switch: one in a while, when she's free and it's quiet
     if (now - this.lastSwitch < SWITCH_GAP || Math.random() > 0.55 || !this.quiet) return;
     this.lastSwitch = now;
@@ -395,7 +420,8 @@ export class MacLife {
     if (now - (this.lastFullscreen || -Infinity) < 3 * MIN) return;
     this.lastFullscreen = now;
     if (this.free) this.capri.perform('look');
-    this.say('fullscreen-app', {}, { line: this.quiet && Math.random() < 0.5 });
+    // her voice line for it comes from main.js (CONTRACT.md: fullscreen-app is the platform's); here only a word
+    if (this.quiet && Math.random() < 0.5) this.say('fullscreen-app', {}, { voice: false });
   }
 
   async react(kind) {
@@ -568,6 +594,19 @@ export class MacLife {
         break;
       case 'net-up':
         if (show) c.perform('split');
+        break;
+      case 'game-start': // a game: she's excited, then keeps out of the way
+        if (show) c.perform(pick(['split', 'hop']), c.towardCenter());
+        break;
+      case 'game-end':
+        if (show) c.perform('stretch');
+        break;
+      case 'usb-in': // something plugged in: she looks around for it, a spark off her hand
+      case 'device-in':
+        if (show) {
+          c.perform('curious', c.towardCenter());
+          this.fx.crackle(() => c.limb(c.towardCenter() < 0 ? 'L' : 'R').hand, { life: 420, radius: 30 * s + 10, count: 2 });
+        }
         break;
       case 'cpu-hot': // bristling, a flicker of red
         if (show) {
@@ -833,7 +872,7 @@ export class MacLife {
         else if (cmd.do === 'greet') this.greet(cmd.period || periodOf());
         else if (cmd.do === 'idle') this.doIdle(cmd.what);
         else if (cmd.do === 'peekWindow') this.peekWindow(cmd.win);
-        else if (cmd.do === 'state') console.log('[mac-life]', JSON.stringify({ clip: this.capri.root.style.clipPath, root: this.capri.root.style.transform, pos: this.capri.pos, free: this.free, quiet: this.quiet, dancing: this.dancing, mood: this.mood, front: this.front, base: this.capri.base?.name, mode: this.capri.mode, stance: this.capri.stance }));
+        else if (cmd.do === 'state') console.log('[mac-life]', JSON.stringify({ grab: this.fx.grab ? [this.fx.grab.width, this.fx.grab.height] : null, size: this.fx.size, clip: this.capri.root.style.clipPath, root: this.capri.root.style.transform, pos: this.capri.pos, free: this.free, quiet: this.quiet, dancing: this.dancing, mood: this.mood, front: this.front, base: this.capri.base?.name, mode: this.capri.mode, stance: this.capri.stance }));
         break;
       default:
         break;

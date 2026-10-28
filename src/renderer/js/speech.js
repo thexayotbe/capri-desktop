@@ -13,6 +13,8 @@ const PACK = '../../assets/voice/';
 export const PRIORITY = new Set(['claude-needs-you', 'claude-done', 'hello']);
 // her reflexes (grabbed, thrown...): they cut in on idle chatter and don't wait for the gap
 export const REFLEX = new Set(['grabbed', 'thrown', 'caught', 'angry', 'crash-wall', 'window-fall', 'zap-cursor']);
+// ...and of those, the impacts: they cut in on another reflex too (grabbed, then slammed into a wall)
+export const IMPACT = new Set(['crash-wall', 'caught']);
 
 // tray › Voice › Chattiness: the least time between two lines, the chance an ordinary line is said
 // at all, and how long before the same key may come back
@@ -35,6 +37,7 @@ export class Speech {
     this.last = new Map();    // key -> index of the take said last
     this.saidAt = new Map();  // key -> when
     this.lastLine = -Infinity;
+    this.lastReflex = -Infinity;
     this.current = null;      // { key, src, gain, ends }
     this.gain = null;
     this.ready = this.load();
@@ -87,10 +90,15 @@ export class Speech {
     if (capri && (capri.stowed || capri.dormant) && !important && key !== 'wake') return 'away';
     // mid-line: only an important line cuts in (a reflex, on idle chatter), never the same one again
     const reflex = REFLEX.has(key);
+    const impact = IMPACT.has(key);
     const cur = this.current?.key;
-    if (cur && (cur === key || !(important || (reflex && !PRIORITY.has(cur) && !REFLEX.has(cur))))) return 'speaking';
+    if (cur) {
+      const cuts = important || (!PRIORITY.has(cur) && (impact || (reflex && !REFLEX.has(cur))));
+      if (cur === key || !cuts) return 'speaking';
+    }
     if (important) return '';
-    if (now - this.lastLine < (reflex ? 1500 : c.gap)) return 'too soon';
+    // a reflex waits only for the reflex before it (idle chatter doesn't hold it back), an impact not at all
+    if (reflex ? !impact && now - this.lastReflex < 1500 : now - this.lastLine < c.gap) return 'too soon';
     if (now - (this.saidAt.get(key) ?? -Infinity) < c.again) return 'said lately';
     if (Math.random() > c.chance) return 'let it go';
     return '';
@@ -112,6 +120,7 @@ export class Speech {
     this.last.set(key, index);
     const now = performance.now();
     this.lastLine = now;
+    if (REFLEX.has(key)) this.lastReflex = now;
     this.saidAt.set(key, now);
     const take = takes[index];
     let buf;
@@ -172,5 +181,5 @@ export class Speech {
   }
 }
 
-// A voice line by key, from anywhere: the 'capri:say' event (harmless if nobody listens).
-export const say = (key) => document.dispatchEvent(new CustomEvent('capri:say', { detail: { key } }));
+// A voice line by key, from anywhere: the 'capri:say' event (harmless if nobody listens, or no page: the tests).
+export const say = (key) => globalThis.document?.dispatchEvent(new CustomEvent('capri:say', { detail: { key } }));

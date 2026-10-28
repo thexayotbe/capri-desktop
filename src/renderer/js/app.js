@@ -15,8 +15,6 @@ import { linesFor } from './lines.js';
 import { pick, fmt, reducedMotion } from './util.js';
 
 const host = window.host;
-// one of her lines by key (CONTRACT.md): whoever voices them listens for it
-const say = (key) => document.dispatchEvent(new CustomEvent('capri:say', { detail: { key } }));
 
 function loadImage(src) {
   return new Promise((resolve, reject) => {
@@ -321,9 +319,6 @@ async function boot() {
   };
 
   host.onClaudeEvent((evt) => brain.handle(evt));
-  // the network going away and coming back
-  window.addEventListener('offline', () => say('net-down'));
-  window.addEventListener('online', () => say('net-up'));
   host.onWindows((data) => {
     capri.setWindows(data);
     brain.onWindows(data);

@@ -13,7 +13,7 @@ const config = require('./config');
 const { TRAY, LANGS } = require('./labels');
 const { createBridge } = require('./bridge');
 const { startWindowWatch } = require('./windows');
-const { appKind } = require('./appkind');
+const { appKind, isGame } = require('./appkind');
 const llm = require('./llm');
 const setup = require('./setup');
 const apps = require('./apps');
@@ -22,7 +22,7 @@ const { ASSISTANTS, assistant } = require('./assistants');
 const activeAssistant = () => assistant(config.load().assistant); // Claude Code or Codex
 const activeHooks = () => activeAssistant().hooks;
 const demoSteps = require('../../scripts/demo-sequence');
-const macLife = require('./mac-life'); // behaviour: app switches, music, charger, network, CPU
+const macLife = require('./mac-life'); // music, charger, battery, network, CPU, games, devices
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const DEV = process.argv.includes('--dev');
@@ -243,8 +243,9 @@ const keyLabel = (accel) => (MAC
 // macOS: the app you switched to (or that went full screen), for her to react (capri:app-switch).
 function onFrontApp({ name, bundleId, fullscreen }) {
   const before = frontApp;
-  frontApp = { name, bundleId, category: appKind({ bundleId, name }), fullscreen };
+  frontApp = { name, bundleId, category: appKind({ bundleId, name }), fullscreen, game: isGame({ bundleId, name }) };
   overlay?.webContents.send('capri:app-switch', frontApp);
+  macLife.frontApp(frontApp); // a game coming up: game-start
   if (fullscreen && !(before?.fullscreen && before.bundleId === bundleId)) say('fullscreen-app');
 }
 
@@ -340,6 +341,7 @@ function rebuildTray() {
     { type: 'separator' },
     { label: t.teleport, click: () => sendCommand('teleport') },
     { label: t.satellite, click: () => sendCommand('satellite') },
+    ...macLife.trayActions(resolveLang(cfg.lang), { command: sendCommand }),
     { label: t.demo, click: playDemo },
     { label: t.help, click: () => sendCommand('welcome') },
     ...(cfg.claude ? [{ label: t.report, click: () => sendCommand('report') }] : []),
@@ -774,6 +776,11 @@ async function debugHandler(route, body) {
     say(body.key, { force: body.force !== false });
     return { ok: true };
   }
+  if (route === 'helper') { // as if the macOS helper said it: { t: 'app' | 'quit' | 'usb' | 'mount', name, bundleId }
+    if (body.t === 'app') onFrontApp({ name: body.name || '', bundleId: body.bundleId || '', fullscreen: Boolean(body.fullscreen) });
+    else macLife.helperEvent(body);
+    return { ok: true };
+  }
   if (route === 'reload') {
     overlay.webContents.reloadIgnoringCache();
     return { ok: true };
@@ -815,7 +822,11 @@ async function debugHandler(route, body) {
   if (route === 'mouse') {
     // the pointer moving over the overlay (css px), and clicking if asked, without touching the real one
     const at = { x: Math.round(body.x), y: Math.round(body.y) };
-    overlay.webContents.sendInputEvent({ type: 'mouseMove', ...at });
+    if (body.up) overlay.webContents.sendInputEvent({ type: 'mouseMove', ...at, modifiers: ['leftButtonDown'] });
+    else overlay.webContents.sendInputEvent({ type: 'mouseMove', ...at, ...(body.held ? { modifiers: ['leftButtonDown'] } : {}) });
+    // a drag in steps: { down: true }, then { held: true } moves, then { up: true }
+    if (body.down) overlay.webContents.sendInputEvent({ type: 'mouseDown', button: 'left', clickCount: 1, ...at });
+    if (body.up) overlay.webContents.sendInputEvent({ type: 'mouseUp', button: 'left', clickCount: 1, ...at });
     if (body.click) {
       overlay.webContents.sendInputEvent({ type: 'mouseDown', button: 'left', clickCount: 1, ...at });
       overlay.webContents.sendInputEvent({ type: 'mouseUp', button: 'left', clickCount: 1, ...at });
@@ -901,6 +912,7 @@ function main() {
         overlay?.webContents.send('windows:update', data);
       },
       onApp: onFrontApp,
+      onOther: (msg) => macLife.helperEvent(msg), // apps quitting (game-end), USB devices, disks
       // another Space: she's on it already (pinOverlay), back on top of what's there
       onSpace: () => {
         pinOverlay();
@@ -924,9 +936,6 @@ function main() {
     // after sleep or a locked screen, once Windows has settled
     powerMonitor.on('resume', () => setTimeout(rearmOverlay, 2000));
     powerMonitor.on('unlock-screen', () => setTimeout(rearmOverlay, 1000));
-    // the charger plugged in or pulled out (her voice lines)
-    powerMonitor.on('on-ac', () => say('charger-in'));
-    powerMonitor.on('on-battery', () => say('charger-out'));
   });
 
   app.on('will-quit', () => {

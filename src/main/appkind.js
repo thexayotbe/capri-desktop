@@ -39,4 +39,18 @@ function appKind({ bundleId = '', name = '' } = {}) {
   return 'other';
 }
 
-module.exports = { appKind };
+// Games and their launchers (Steam, Epic, CrossOver, Battle.net, GOG, Heroic, Prism...): she fires
+// game-start when one comes to the front, game-end when it quits. Not one of the four kinds above:
+// the contract's category stays as it is, `game` is an extra flag.
+const GAME_PREFIXES = [
+  'com.valvesoftware.', 'com.epicgames.', 'com.codeweavers.', 'net.battle.', 'com.blizzard.', 'com.riotgames.',
+  'com.gog.', 'com.heroicgameslauncher.', 'com.mojang.', 'org.prismlauncher.', 'com.feralinteractive.', 'com.aspyr.',
+  'com.ea.', 'com.ubisoft.', 'com.rockstargames.', 'unity.', 'com.unity3d.', 'org.openemu.', 'net.pcsx2.', 'org.dolphin-emu.',
+];
+const GAME_NAMES = /\b(steam|epic games|crossover|battle\.net|gog galaxy|heroic|minecraft|prism launcher|openemu|whisky)\b/i;
+
+function isGame({ bundleId = '', name = '' } = {}) {
+  return GAME_PREFIXES.some((p) => bundleId.startsWith(p)) || GAME_NAMES.test(name);
+}
+
+module.exports = { appKind, isGame };

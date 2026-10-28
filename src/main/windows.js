@@ -22,8 +22,8 @@ function onHerScreen(wins, bounds) {
   return wins.filter((w) => w.x < bounds.width && w.x + w.w > 0 && w.y < bounds.height && w.y + w.h > 0);
 }
 
-function startWindowWatch({ overlay, onUpdate, onApp = () => {}, onSpace = () => {} }) {
-  if (process.platform === 'darwin') return startMacWatch({ overlay, onUpdate, onApp, onSpace });
+function startWindowWatch({ overlay, onUpdate, onApp = () => {}, onSpace = () => {}, onOther = () => {} }) {
+  if (process.platform === 'darwin') return startMacWatch({ overlay, onUpdate, onApp, onSpace, onOther });
   if (process.platform !== 'win32') return { stop() {} };
 
   let child = null;
@@ -100,7 +100,7 @@ function isMax(win) {
   return win.x <= a.x + 4 && win.y <= a.y + 4 && win.x + win.w >= a.x + a.width - 4 && win.y + win.h >= a.y + a.height - 4;
 }
 
-function startMacWatch({ overlay, onUpdate, onApp, onSpace }) {
+function startMacWatch({ overlay, onUpdate, onApp, onSpace, onOther }) {
   let child = null;
   let stopped = false;
   let restarts = 0;
@@ -119,6 +119,7 @@ function startMacWatch({ overlay, onUpdate, onApp, onSpace }) {
     if (overlay.isDestroyed()) return;
     if (msg.t === 'app') onApp({ name: msg.name, bundleId: msg.bundleId, pid: msg.pid, fullscreen: Boolean(msg.fullscreen) });
     else if (msg.t === 'space') onSpace();
+    else if (msg.t === 'quit' || msg.t === 'usb' || msg.t === 'mount') onOther(msg); // apps quitting, devices, disks
     else if (msg.t === 'wins') {
       const bounds = overlay.getBounds();
       const wins = onHerScreen(msg.wins.map((w) => toOverlay(w, bounds)), bounds);

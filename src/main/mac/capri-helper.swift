@@ -10,12 +10,16 @@
 //    display (the same coordinates as Electron's screen); fs: it's full screen (its own Space)
 // {"t":"app","name","bundleId","pid","fullscreen"}   the app in front changed (or went full screen)
 // {"t":"space"}                                      another Space came up
+// {"t":"quit","name","bundleId"}                     an app quit
+// {"t":"usb","name"}                                 a USB device was plugged in (IOKit, no permission)
+// {"t":"mount","name","path"}                        a disk or volume showed up (not disk images)
 //
 // Build: node scripts/build-mac-helper.js (swiftc, a universal binary next to this file)
 
 import AppKit
 import CoreGraphics
 import Foundation
+import IOKit
 
 setvbuf(stdout, nil, _IOLBF, 0)
 
@@ -166,6 +170,65 @@ center.addObserver(forName: NSWorkspace.didActivateApplicationNotification, obje
 center.addObserver(forName: NSWorkspace.activeSpaceDidChangeNotification, object: nil, queue: .main) { _ in
   emit(["t": "space"])
   look()
+}
+
+center.addObserver(forName: NSWorkspace.didTerminateApplicationNotification, object: nil, queue: .main) { note in
+  guard let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication else { return }
+  emit(["t": "quit", "name": app.localizedName ?? "", "bundleId": app.bundleIdentifier ?? ""])
+}
+center.addObserver(forName: NSWorkspace.didMountNotification, object: nil, queue: .main) { note in
+  guard let url = note.userInfo?[NSWorkspace.volumeURLUserInfoKey] as? URL else { return }
+  // a disk image being opened (an installer) isn't a device
+  if let values = try? url.resourceValues(forKeys: [.volumeIsInternalKey, .volumeIsLocalKey]),
+     values.volumeIsInternal == true { return }
+  var stat = statfs()
+  if statfs(url.path, &stat) == 0 {
+    let from = withUnsafePointer(to: &stat.f_mntfromname) { $0.withMemoryRebound(to: CChar.self, capacity: Int(MAXPATHLEN)) { String(cString: $0) } }
+    if let disk = from.split(separator: "/").last, isDiskImage(String(disk)) { return }
+  }
+  let name = note.userInfo?[NSWorkspace.localizedVolumeNameUserInfoKey] as? String ?? url.lastPathComponent
+  emit(["t": "mount", "name": name, "path": url.path])
+}
+
+// Whether a disk (disk4s1) is a disk image: its IOKit parent chain goes through the disk image driver.
+func isDiskImage(_ bsd: String) -> Bool {
+  guard let match = IOBSDNameMatching(kIOMainPortDefault, 0, bsd) else { return false }
+  var service = IOServiceGetMatchingService(kIOMainPortDefault, match)
+  var depth = 0
+  while service != 0 && depth < 12 {
+    if let cls = IOObjectCopyClass(service)?.takeRetainedValue() as String?, cls.contains("DiskImage") {
+      IOObjectRelease(service)
+      return true
+    }
+    var parent: io_registry_entry_t = 0
+    let found = IORegistryEntryGetParentEntry(service, kIOServicePlane, &parent) == KERN_SUCCESS
+    IOObjectRelease(service)
+    service = found ? parent : 0
+    depth += 1
+  }
+  if service != 0 { IOObjectRelease(service) }
+  return false
+}
+
+// USB devices plugged in: an IOKit notification (the ones there already at start are skipped).
+let usbPort = IONotificationPortCreate(kIOMainPortDefault)
+var usbIterator: io_iterator_t = 0
+func drainUsb(_ iterator: io_iterator_t, report: Bool) {
+  while case let device = IOIteratorNext(iterator), device != 0 {
+    if report {
+      var name = [CChar](repeating: 0, count: 128)
+      IORegistryEntryGetName(device, &name)
+      emit(["t": "usb", "name": String(cString: name)])
+    }
+    IOObjectRelease(device)
+  }
+}
+if let usbPort {
+  CFRunLoopAddSource(CFRunLoopGetMain(), IONotificationPortGetRunLoopSource(usbPort).takeUnretainedValue(), .defaultMode)
+  let added = IOServiceAddMatchingNotification(usbPort, kIOFirstMatchNotification, IOServiceMatching("IOUSBHostDevice"), { _, iterator in
+    drainUsb(iterator, report: true)
+  }, nil, &usbIterator)
+  if added == KERN_SUCCESS { drainUsb(usbIterator, report: false) }
 }
 
 Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { _ in look() }

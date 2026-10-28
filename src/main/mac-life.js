@@ -1,115 +1,24 @@
 'use strict';
 
-// Her life on the Mac (behaviour stream): what she feels of your computer, sent to the overlay.
-//   'capri:app-switch' { name, bundleId, category, fullscreen }   the app in front changed
-//   'capri:music'      { playing, app, track, artist } | { denied: true, app }
-//   'capri:pc'         { key: charger-in | charger-out | battery-low | net-down | net-up | cpu-hot, percent? }
-// Music, the charger and the network work like this on any Mac; the app watch is a stand-in.
-//
-// OWN_APP_POLL: the platform stream sends 'capri:app-switch' itself (CONTRACT.md). Until that's merged,
-// a little watcher here does (NSWorkspace through osascript, no permission needed). Set it to false
-// (or run with CAPRI_APP_POLL=0) once platform's is in, so it isn't sent twice.
+// Her life on the Mac: what she feels of your computer, sent to the overlay.
+//   'capri:music' { playing, app, track, artist } | { denied: true, app }
+//   'capri:pc'    { key, ... }: charger-in | charger-out | battery-low (percent) | net-down | net-up |
+//                 cpu-hot (load) | game-start (app) | game-end (app) | usb-in (name) | device-in (name)
+// The app in front itself ('capri:app-switch') comes from the window watch's helper (windows.js);
+// main.js hands its app switches, quits, USB devices and disks to frontApp() / helperEvent() here.
 
 const os = require('node:os');
 const readline = require('node:readline');
 const { spawn, execFile } = require('node:child_process');
-const { app, powerMonitor, net } = require('electron');
+const { powerMonitor, net } = require('electron');
+
+const { isGame } = require('./appkind');
 
 const MAC = process.platform === 'darwin';
-const OWN_APP_POLL = MAC && process.env.CAPRI_APP_POLL !== '0';
+const GAME_AGAIN = 10 * 60000; // the same game coming back to the front: game-start again only after this
+const USB_HUSH = 8000; // a USB stick: its disk showing up right after isn't another device
 
-// Several Capris side by side while testing (one per worktree): each its own settings and its own lock.
-if (process.env.CAPRI_USER_DATA) app.setPath('userData', process.env.CAPRI_USER_DATA);
-
-// ---------- what kind of app is in front ----------
-
-const CATEGORY = {
-  browser: [
-    'com.apple.Safari', 'com.apple.SafariTechnologyPreview', 'com.google.Chrome', 'com.google.Chrome.canary',
-    'org.chromium.Chromium', 'org.mozilla.firefox', 'org.mozilla.firefoxdeveloperedition', 'com.brave.Browser',
-    'com.microsoft.edgemac', 'company.thebrowser.Browser', 'company.thebrowser.dia', 'com.operasoftware.Opera',
-    'com.vivaldi.Vivaldi', 'app.zen-browser.zen', 'com.kagi.kagimacOS', 'org.torproject.torbrowser', 'com.openai.atlas',
-  ],
-  code: [
-    'com.microsoft.VSCode', 'com.microsoft.VSCodeInsiders', 'com.todesktop.230313mzl4w4u92', 'com.exafunction.windsurf',
-    'com.apple.dt.Xcode', 'dev.zed.Zed', 'dev.zed.Zed-Preview', 'com.sublimetext.4', 'com.sublimetext.3', 'com.panic.Nova',
-    'com.apple.Terminal', 'com.googlecode.iterm2', 'dev.warp.Warp-Stable', 'com.mitchellh.ghostty', 'net.kovidgoyal.kitty',
-    'io.alacritty', 'com.github.wez.wezterm', 'com.google.android.studio', 'com.t3tools.t3code', 'com.google.antigravity',
-  ],
-  chat: [
-    'com.tinyspeck.slackmacgap', 'com.hnc.Discord', 'ru.keepcoder.Telegram', 'org.telegram.desktop', 'net.whatsapp.WhatsApp',
-    'desktop.WhatsApp', 'com.apple.MobileSMS', 'com.microsoft.teams2', 'com.microsoft.teams', 'us.zoom.xos',
-    'com.facebook.archon', 'org.whispersystems.signal-desktop', 'com.viber.osx', 'com.skype.skype', 'im.riot.app',
-    'com.apple.FaceTime', 'com.anthropic.claudefordesktop', 'com.openai.chat',
-  ],
-};
-const BY_NAME = [
-  ['code', /\b(code|cursor|xcode|intellij|pycharm|webstorm|goland|rider|clion|android studio|zed|sublime|nova|terminal|iterm|warp|ghostty|kitty|alacritty|wezterm|vim|emacs)\b/i],
-  ['browser', /\b(safari|chrome|chromium|firefox|brave|edge|arc|opera|vivaldi|zen|orion|browser)\b/i],
-  ['chat', /\b(slack|discord|telegram|whatsapp|messages|teams|zoom|messenger|signal|viber|skype|element)\b/i],
-];
-
-function categorize(bundleId = '', name = '') {
-  for (const [category, ids] of Object.entries(CATEGORY)) {
-    if (ids.includes(bundleId)) return category;
-  }
-  if (/^com\.jetbrains\./.test(bundleId)) return 'code';
-  for (const [category, re] of BY_NAME) {
-    if (re.test(name)) return category;
-  }
-  return 'other';
-}
-
-// ---------- small osascript (JXA) watchers, one long-lived process each ----------
-
-// The app in front, once a second, said only when it changes; and whether it covers a whole screen
-// (window bounds need no permission, their titles would).
-const APP_WATCH = `
-ObjC.import('AppKit'); ObjC.import('CoreGraphics'); ObjC.import('unistd');
-function fullscreen(pid) {
-  try {
-    const list = ObjC.castRefToObject($.CGWindowListCopyWindowInfo($.kCGWindowListOptionOnScreenOnly | $.kCGWindowListExcludeDesktopElements, $.kCGNullWindowID));
-    const screens = $.NSScreen.screens;
-    for (let i = 0; i < list.count; i++) {
-      const w = list.objectAtIndex(i);
-      if (w.objectForKey('kCGWindowOwnerPID').js !== pid || w.objectForKey('kCGWindowLayer').js !== 0) continue;
-      const b = w.objectForKey('kCGWindowBounds');
-      const ww = b.objectForKey('Width').js, wh = b.objectForKey('Height').js;
-      for (let j = 0; j < screens.count; j++) {
-        const f = screens.objectAtIndex(j).frame;
-        if (ww >= f.size.width && wh >= f.size.height) return true;
-      }
-    }
-  } catch (e) {}
-  return false;
-}
-function run(argv) {
-  const self = Number(argv[0]);
-  const ws = $.NSWorkspace.sharedWorkspace;
-  let lastKey = '';
-  let lastFs = null;
-  let n = 0;
-  for (;;) {
-    $.NSRunLoop.currentRunLoop.runUntilDate($.NSDate.dateWithTimeIntervalSinceNow(1));
-    if ($.getppid() === 1) return;
-    const a = ws.frontmostApplication;
-    if (!a || a.isNil()) continue;
-    const pid = a.processIdentifier;
-    if (pid === self) continue;
-    const id = a.bundleIdentifier.isNil() ? '' : a.bundleIdentifier.js;
-    const name = a.localizedName.isNil() ? '' : a.localizedName.js;
-    // a new app in front; or every 5 s the same one again, in case it went fullscreen since
-    const key = id + '|' + name;
-    const changed = key !== lastKey;
-    if (!changed && ++n % 5) continue;
-    const fs = fullscreen(pid);
-    if (!changed && fs === lastFs) continue;
-    lastKey = key;
-    lastFs = fs;
-    n = 0;
-    console.log(JSON.stringify({ name: name, bundleId: id, fullscreen: fs }));
-  }
-}`;
+// ---------- small osascript (JXA) watcher, one long-lived process ----------
 
 // Spotify and Music, every 2 s, only when they're already running (an Apple event to an app that
 // isn't would launch it). The first time, macOS asks whether Capri may control them; a no is
@@ -268,24 +177,50 @@ function startMacLife({ overlay, config }) {
     const win = overlay();
     if (win && !win.isDestroyed()) win.webContents.send(channel, payload);
   };
-  state = { overlay, config, send, app: null, music: null, pc: null, lastApp: null };
+  state = { overlay, config, send, music: null, pc: null, game: null, games: new Map(), usbAt: -Infinity };
   state.pc = watchPc((payload) => send('capri:pc', payload));
-  if (OWN_APP_POLL) {
-    state.app = jxa(APP_WATCH, [String(process.pid)], (msg) => {
-      const evt = { name: msg.name, bundleId: msg.bundleId, category: categorize(msg.bundleId, msg.name), fullscreen: Boolean(msg.fullscreen) };
-      state.lastApp = evt;
-      send('capri:app-switch', evt);
-    });
-  }
   refreshMusic();
   return { stop: stopMacLife };
+}
+
+// The app in front changed (main.js, from the helper): a game coming up starts one.
+function frontApp(evt) {
+  if (!state || !evt || !isGame(evt)) return;
+  const id = evt.bundleId || evt.name;
+  if (state.game?.id === id) return;
+  const now = Date.now();
+  const again = now - (state.games.get(id) || -Infinity) < GAME_AGAIN;
+  state.game = { id, name: evt.name };
+  state.games.set(id, now);
+  if (!again) state.send('capri:pc', { key: 'game-start', app: evt.name });
+}
+
+// The helper's other news: { t: 'quit' | 'usb' | 'mount', name, bundleId? }
+function helperEvent(msg) {
+  if (!state || !msg) return;
+  if (msg.t === 'quit') {
+    if (state.game && state.game.id === (msg.bundleId || msg.name)) {
+      state.send('capri:pc', { key: 'game-end', app: state.game.name });
+      state.game = null;
+    }
+  } else if (msg.t === 'usb') {
+    // a device with several parts (a hub, a dock) shows up several times at once
+    const now = Date.now();
+    if (now - state.usbAt > 3000) state.send('capri:pc', { key: 'usb-in', name: msg.name });
+    state.usbAt = now;
+  } else if (msg.t === 'mount') {
+    if (Date.now() - state.usbAt > USB_HUSH) state.send('capri:pc', { key: 'device-in', name: msg.name });
+  }
 }
 
 function refreshMusic() {
   if (!state) return;
   const wanted = MAC && state.config.load().macMusic !== false;
   if (wanted && !state.music) {
-    state.music = jxa(MUSIC_WATCH, [], (msg) => state.send('capri:music', msg));
+    state.music = jxa(MUSIC_WATCH, [], (msg) => {
+      console.log('[capri] music', JSON.stringify(msg)); // only when it changes
+      state.send('capri:music', msg);
+    });
   } else if (!wanted && state.music) {
     state.music.stop();
     state.music = null;
@@ -295,18 +230,22 @@ function refreshMusic() {
 
 function stopMacLife() {
   if (!state) return;
-  state.app?.stop();
   state.music?.stop();
   state.pc?.stop();
   state = null;
 }
 
-// Her menu's entries for all this. `lang`: resolved; `command(name)`: to the overlay; `update(patch)`: her config.
+// Her menu's action: possess the screen now (with Teleport, Satellite...).
+function trayActions(lang, { command }) {
+  const t = LABELS[lang] || LABELS.en;
+  return [{ label: t.possessNow, click: () => command('possessScreen') }];
+}
+
+// Her menu's toggles for all this. `lang`: resolved; `command(name)`: to the overlay; `update(patch)`: her config.
 function trayItems(lang, { command, update }) {
   const t = LABELS[lang] || LABELS.en;
   const cfg = state?.config.load() || {};
   return [
-    { label: t.possessNow, click: () => command('possessScreen') },
     { label: t.takeovers, type: 'checkbox', checked: cfg.screenPossess !== false, click: (item) => update({ screenPossess: item.checked }) },
     ...(MAC ? [{
       label: t.music,
@@ -320,4 +259,4 @@ function trayItems(lang, { command, update }) {
   ];
 }
 
-module.exports = { startMacLife, stopMacLife, trayItems, categorize, OWN_APP_POLL, lastApp: () => state?.lastApp || null };
+module.exports = { startMacLife, stopMacLife, trayActions, trayItems, frontApp, helperEvent };

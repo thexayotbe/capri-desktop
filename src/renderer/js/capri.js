@@ -19,8 +19,6 @@ const GRAVITY = 2600; // px/s²
 const THIGH = 73;     // hip to knee, sprite px (see sprite.js)
 
 const UPLINK_DAY = 'capri.uplinkDay'; // the last day she sent the red light up
-// one of her lines by key (CONTRACT.md): whoever voices them listens for it
-const say = (key) => document.dispatchEvent(new CustomEvent('capri:say', { detail: { key } }));
 
 const GREEN = [0.21, 1, 0.48];
 const INK = [0.08, 0.06, 0.11];
@@ -1576,7 +1574,7 @@ export class Capri {
     });
     this.canvas.addEventListener('mousedown', (e) => {
       if (e.button !== 0 || this.busy || !this.hit(e.clientX, e.clientY)) return;
-      down = { x: e.clientX, y: e.clientY, pos: { ...this.pos } };
+      down = { x: e.clientX, y: e.clientY, pos: { ...this.pos }, trail: [] };
     });
     window.addEventListener('mousemove', (e) => {
       this.mouse = { x: e.clientX, y: e.clientY }; // a window she's in watches it
@@ -1599,6 +1597,9 @@ export class Capri {
           this.onTeleport?.('start');
         }
         if (this.dragging) {
+          // where the pointer was lately: how hard she's thrown when let go
+          down.trail.push({ x: e.clientX, t: performance.now() });
+          if (down.trail.length > 8) down.trail.shift();
           this.pos = {
             x: clamp(down.pos.x + dx, 40, this.view.w - 40),
             y: clamp(down.pos.y + dy, SPRITE.height * this.scale * 0.5, this.floor),
@@ -1613,20 +1614,58 @@ export class Capri {
     window.addEventListener('mouseup', () => {
       if (!down) return;
       const wasDragging = this.dragging;
+      const wall = wasDragging ? this.thrownAt(down.trail) : 0;
       down = null;
       this.dragging = false;
       if (wasDragging) {
         tween(this.p, { glitch: 0, split: 0 }, 200, ease.out);
         this.onTeleport?.('end');
-        this.drop();
+        if (wall) this.crashWall(wall).then(() => this.drop({ crashed: true }));
+        else this.drop();
       } else {
         this.onClick?.();
       }
     });
   }
 
+  // Thrown sideways hard enough to reach a side of the screen: -1 (left), 1 (right) or 0.
+  thrownAt(trail) {
+    const now = performance.now();
+    const recent = trail.filter((p) => now - p.t < 120);
+    if (recent.length < 2) return 0;
+    const a = recent[0], b = recent[recent.length - 1];
+    const vx = ((b.x - a.x) / Math.max(16, b.t - a.t)) * 1000; // px/s
+    if (Math.abs(vx) < 1100) return 0;
+    const dir = Math.sign(vx);
+    const room = dir > 0 ? this.view.w - 40 - this.pos.x : this.pos.x - 40;
+    return room < Math.abs(vx) * 0.4 ? dir : 0; // she'd get there in under half a second
+  }
+
+  // ...and she slams into it: flattened against the edge, sparks off it, a red flash.
+  async crashWall(dir) {
+    const s = this.scale;
+    const edge = dir > 0 ? this.view.w - 40 : 40;
+    const from = this.pos.x;
+    this.busy = true;
+    if (!reducedMotion.matches) {
+      for (const k of [0.55, 1]) {
+        this.pos = { x: lerp(from, edge, k), y: this.pos.y };
+        this.place();
+        await sleep(ON_ONES);
+      }
+    }
+    this.pos = { x: edge, y: this.pos.y };
+    this.place();
+    say('crash-wall');
+    this.voice.play('land');
+    this.voice.play('bolt', { soft: true });
+    this.fx.burst(edge + dir * 10, this.pos.y - 120 * s, { count: 16, power: 0.7, spread: 70 * s });
+    this.busy = false;
+    await this.hurt();
+  }
+
   // Let go of her: onto a ledge if her hips are right at one, otherwise she falls.
-  drop() {
+  drop({ crashed = false } = {}) {
     const s = this.scale;
     const hip = this.pos.y - (SPRITE.feet.y - SPRITE.hip) * s;
     for (const win of this.windows.wins) {
@@ -1640,7 +1679,7 @@ export class Capri {
       return;
     }
     if (this.pos.y < this.floor - 2) {
-      say('thrown');
+      if (!crashed) say('thrown');
       this.fall();
     } else this.perform('land');
   }

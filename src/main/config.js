@@ -15,6 +15,8 @@ const DEFAULTS = {
   displayId: null,   // null = primary display
   wander: true,      // random teleports when idle
   possess: true,     // now and then she dives into the window she sits on and takes it over
+  screenPossess: true, // every 20-40 min she takes over the whole screen for a few seconds (mac-life.js)
+  macMusic: true,    // macOS: she dances while Spotify or Music plays (asks them only when they're running)
   visible: true,
   welcomed: false,   // she has introduced herself (her welcome panel)
   assistant: 'auto', // the coding assistant she watches: 'claude' or 'codex' ('auto': whichever has her hooks)
