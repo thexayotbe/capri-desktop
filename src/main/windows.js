@@ -2,14 +2,19 @@
 
 // Feeds the overlay with the position of the other windows, so Capri can sit on them.
 // Windows: a small PowerShell helper does the Win32 calls; we turn its physical pixels into the
-// overlay's coordinates. macOS: a small Swift helper (mac/capri-helper.swift) reads them from
-// CGWindowList, already in points, and also says which app is in front.
+// overlay's coordinates. It also says when the window in front is another AI (ChatGPT,
+// Gemini…: `ai`, the names it matched), for her jealousy, and never passes on a title; which game
+// is in front, if one (`game`, its folder in Steam's library or another launcher's); and the USB
+// sticks plugged in (`usb`, drive letters), and the last device plugged in or out (`plug`).
+// macOS: a small Swift helper (mac/capri-helper.swift) reads them from CGWindowList, already in
+// points, and also says which app is in front.
 
 const fs = require('node:fs');
 const path = require('node:path');
 const readline = require('node:readline');
 const { spawn } = require('node:child_process');
 const { app, screen } = require('electron');
+const { isGame } = require('./appkind');
 
 // in the installed app they sit next to the app archive (asarUnpack), where they can be run
 const unpacked = (file) => file.replace(`app.asar${path.sep}`, `app.asar.unpacked${path.sep}`);
@@ -22,13 +27,14 @@ function onHerScreen(wins, bounds) {
   return wins.filter((w) => w.x < bounds.width && w.x + w.w > 0 && w.y < bounds.height && w.y + w.h > 0);
 }
 
-function startWindowWatch({ overlay, onUpdate, onApp = () => {}, onSpace = () => {}, onOther = () => {} }) {
-  if (process.platform === 'darwin') return startMacWatch({ overlay, onUpdate, onApp, onSpace, onOther });
-  if (process.platform !== 'win32') return { stop() {} };
+function startWindowWatch({ overlay, onUpdate, onApp = () => {}, onSpace = () => {} }) {
+  if (process.platform === 'darwin') return startMacWatch({ overlay, onUpdate, onApp, onSpace });
+  if (process.platform !== 'win32') return { stop() {}, refresh() {} };
 
   let child = null;
   let stopped = false;
   let restarts = 0;
+  let last = null; // the helper's last snapshot: it only speaks when something changes
 
   const handle = overlay.getNativeWindowHandle();
   const self = handle.length >= 8 ? handle.readBigUInt64LE(0) : BigInt(handle.readUInt32LE(0));
@@ -38,6 +44,17 @@ function startWindowWatch({ overlay, onUpdate, onApp = () => {}, onSpace = () =>
     return { id: win.id, x: dip.x - bounds.x, y: dip.y - bounds.y, w: dip.width, h: dip.height, max: win.max };
   };
 
+  // the snapshot as seen from her window, wherever it is now
+  const send = () => {
+    if (!last || overlay.isDestroyed()) return;
+    const bounds = overlay.getBounds();
+    const wins = onHerScreen(last.wins.map((w) => toOverlay(w, bounds)), bounds);
+    onUpdate({
+      fg: last.fg, taskbar: Boolean(last.taskbar), ai: Array.isArray(last.ai) ? last.ai : [],
+      game: last.game || null, usb: Array.isArray(last.usb) ? last.usb : [], plug: last.plug || null, wins,
+    });
+  };
+
   const start = () => {
     child = spawn('powershell.exe', [
       '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass',
@@ -45,16 +62,12 @@ function startWindowWatch({ overlay, onUpdate, onApp = () => {}, onSpace = () =>
     ], { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
 
     readline.createInterface({ input: child.stdout }).on('line', (line) => {
-      let snap;
       try {
-        snap = JSON.parse(line);
+        last = JSON.parse(line);
       } catch {
         return;
       }
-      if (overlay.isDestroyed()) return;
-      const bounds = overlay.getBounds();
-      const wins = onHerScreen(snap.wins.map((w) => toOverlay(w, bounds)), bounds);
-      onUpdate({ fg: snap.fg, taskbar: Boolean(snap.taskbar), wins });
+      send();
     });
     child.stderr.on('data', (d) => console.error('[capri] window watch:', String(d).trim()));
     child.on('exit', () => {
@@ -69,6 +82,8 @@ function startWindowWatch({ overlay, onUpdate, onApp = () => {}, onSpace = () =>
       stopped = true;
       child?.kill();
     },
+    // her window moved (another screen, the taskbar in it or not): the same windows, from there
+    refresh: send,
   };
 }
 
@@ -100,30 +115,81 @@ function isMax(win) {
   return win.x <= a.x + 4 && win.y <= a.y + 4 && win.x + win.w >= a.x + a.width - 4 && win.y + win.h >= a.y + a.height - 4;
 }
 
-function startMacWatch({ overlay, onUpdate, onApp, onSpace, onOther }) {
+// The other AIs' own Mac apps, by name or bundle id (their keys as in bond.js RIVALS), for her
+// jealousy. No window titles on macOS (that needs Screen Recording): one in a browser tab goes unseen.
+const MAC_AIS = [
+  ['chatgpt', /chatgpt|^com\.openai\.chat/i],
+  ['claude', /^claude$|^com\.anthropic\.claudefordesktop/i],
+  ['codex', /codex/i],
+  ['gemini', /gemini/i],
+  ['copilot', /copilot/i],
+  ['perplexity', /perplexity/i],
+  ['deepseek', /deepseek/i],
+  ['grok', /grok/i],
+  ['lechat', /^le chat$|mistral/i],
+];
+const PLUG_WAIT = 2500; // a USB device: this long to see whether it's a disk (it mounts), not a device
+
+// The same data windows.ps1 gives on Windows, from the helper: the AI or game in front, the external
+// disks mounted (`usb`, by name, gone once their folder is), the last USB device plugged in (`plug`).
+function startMacWatch({ overlay, onUpdate, onApp, onSpace }) {
   let child = null;
   let stopped = false;
   let restarts = 0;
+  let last = null; // the helper's last window list
+  let front = { ai: [], game: null };
+  let disks = []; // [{ name, path }]
+  let plug = null;
+  let plugs = 0;
+  let mountAt = -Infinity;
 
   const toOverlay = (win, bounds) => ({
     id: win.id, x: win.x - bounds.x, y: win.y - bounds.y, w: win.w, h: win.h, max: isMax(win), owner: win.owner, pid: win.pid,
   });
 
+  // the last window list as seen from her window, wherever it is now
+  const send = () => {
+    if (!last || overlay.isDestroyed()) return;
+    disks = disks.filter((d) => fs.existsSync(d.path)); // ejected
+    const bounds = overlay.getBounds();
+    const wins = onHerScreen(last.wins.map((w) => toOverlay(w, bounds)), bounds);
+    onUpdate({ fg: last.fg, taskbar: false, ai: front.ai, game: front.game, usb: disks.map((d) => d.name), plug, wins });
+  };
+
   const onLine = (line) => {
     let msg;
     try {
-      msg = JSON.parse(line);
+      msg = typeof line === 'string' ? JSON.parse(line) : line;
     } catch {
       return;
     }
-    if (overlay.isDestroyed()) return;
-    if (msg.t === 'app') onApp({ name: msg.name, bundleId: msg.bundleId, pid: msg.pid, fullscreen: Boolean(msg.fullscreen) });
-    else if (msg.t === 'space') onSpace();
-    else if (msg.t === 'quit' || msg.t === 'usb' || msg.t === 'mount') onOther(msg); // apps quitting, devices, disks
-    else if (msg.t === 'wins') {
-      const bounds = overlay.getBounds();
-      const wins = onHerScreen(msg.wins.map((w) => toOverlay(w, bounds)), bounds);
-      onUpdate({ fg: msg.fg, taskbar: false, wins });
+    if (overlay.isDestroyed() || !msg) return;
+    if (msg.t === 'app') {
+      const evt = { name: msg.name || '', bundleId: msg.bundleId || '', pid: msg.pid, fullscreen: Boolean(msg.fullscreen) };
+      front = {
+        ai: MAC_AIS.filter(([, re]) => re.test(evt.name) || re.test(evt.bundleId)).map(([key]) => key),
+        game: isGame(evt) ? evt.name : null,
+      };
+      onApp(evt);
+      send();
+    } else if (msg.t === 'space') onSpace();
+    else if (msg.t === 'mount') {
+      mountAt = Date.now();
+      if (msg.path && !disks.some((d) => d.path === msg.path)) disks.push({ name: msg.name || msg.path, path: msg.path });
+      send();
+    } else if (msg.t === 'usb') {
+      // a hub or a dock shows up as several devices at once: the first one
+      const n = ++plugs;
+      const at = Date.now();
+      setTimeout(() => {
+        if (n !== plugs) return;
+        const disk = mountAt >= at - 3000; // it mounted: a USB stick, seen as one (`usb`) instead
+        plug = { n, name: msg.name || '', class: disk ? 'Volume' : '', in: true };
+        send();
+      }, PLUG_WAIT);
+    } else if (msg.t === 'wins') {
+      last = msg;
+      send();
     }
   };
 
@@ -149,6 +215,9 @@ function startMacWatch({ overlay, onUpdate, onApp, onSpace, onOther }) {
       stopped = true;
       child?.kill();
     },
+    refresh: send,
+    // --dev: as if the helper said it ({ t: 'app' | 'usb' | 'mount' | 'space', ... })
+    inject: onLine,
   };
 }
 

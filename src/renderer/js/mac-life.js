@@ -2,7 +2,6 @@
 //   - the app you switch to: a look or a word, a mood per kind of app (browser, code, chat)
 //   - music playing in Spotify or Music: she dances to it
 //   - the time of day: she greets the morning, the afternoon, the evening, the night; sleepier after midnight
-//   - your computer: the charger, the battery, the network, the CPU
 //   - now and then she takes over your whole screen for a few seconds (takeover.js)
 //   - more to do when idle: stretches, yawns, eyes on your pointer, following it a bit, peeking
 //     from behind a window, little hops from one spot to another
@@ -14,7 +13,7 @@
 import { ACTS } from './acting.js';
 import { SPRITE } from './sprite.js';
 import { takeover } from './takeover.js';
-import { rand, pick, clamp, lerp, sleep, tween, ease, fmt, reducedMotion } from './util.js';
+import { rand, pick, clamp, lerp, sleep, fmt, reducedMotion } from './util.js';
 
 const ON_TWOS = 1000 / 12;
 const MIN = 60000;
@@ -121,16 +120,6 @@ const LINES = {
     afternoon: ['Afternoon already. How’s it going?', 'Half the day gone. Still here.'],
     evening: ['Evening. Night City’s waking up.', 'Lights coming on out there.'],
     'late-night': ['It’s late, choom. Even constructs sleep.', 'Past midnight. Bed… after this one?'],
-    'charger-in': ['Fresh juice. Mmm.', 'Plugged in. I felt that.'],
-    'charger-out': ['Hey! Who pulled the plug?', 'On battery now. Careful with us.'],
-    'battery-low': ['{percent}% left. Find a charger, choom.', 'Running on fumes: {percent}%.'],
-    'net-down': ['The Net’s gone. I can’t reach anything.', 'Connection lost. We’re flatlined out here.'],
-    'net-up': ['Back on the Net.', 'Link restored. Missed me?'],
-    'cpu-hot': ['Your CPU’s running hot. Something’s chewing on it.', 'Getting toasty in here.'],
-    'game-start': ['Game time? I call next round.', 'Ooh, are we playing? Don’t die.'],
-    'game-end': ['Done playing? Did you win?', 'Back to work, choom.'],
-    'usb-in': ['Something just plugged into you. Ticklish.', 'New hardware! Let me sniff it.'],
-    'device-in': ['A new drive. What’s on it?', 'Oh, a disk. Can I look inside?'],
   },
   fr: {
     'app-switch': ['Ah, celle-là.', 'Nouvelle fenêtre, nouveaux ennuis.', 'On va où, maintenant ?'],
@@ -146,16 +135,6 @@ const LINES = {
     afternoon: ['Déjà l’après-midi. Ça avance ?', 'La moitié de la journée. Toujours là.'],
     evening: ['Bonsoir. Night City se réveille.', 'Les lumières s’allument dehors.'],
     'late-night': ['Il est tard, choom. Même les constructs dorment.', 'Minuit passé. Au lit… après celle-là ?'],
-    'charger-in': ['Du jus tout frais. Mmm.', 'Branchée. Je l’ai senti.'],
-    'charger-out': ['Hé ! Qui a tiré la prise ?', 'Sur batterie. Doucement avec nous.'],
-    'battery-low': ['Plus que {percent} %. Trouve un chargeur, choom.', 'Sur la réserve : {percent} %.'],
-    'net-down': ['Plus de Net. Je ne joins plus rien.', 'Connexion perdue. Flatline.'],
-    'net-up': ['De retour sur le Net.', 'Liaison rétablie. Je t’ai manqué ?'],
-    'cpu-hot': ['Ton processeur chauffe. Quelque chose le ronge.', 'Il commence à faire chaud ici.'],
-    'game-start': ['On joue ? Je prends la prochaine partie.', 'Oh, on joue ? Ne meurs pas.'],
-    'game-end': ['Fini de jouer ? Tu as gagné ?', 'Retour au boulot, choom.'],
-    'usb-in': ['Quelque chose vient de se brancher. Ça chatouille.', 'Du nouveau matos ! Laisse-moi renifler.'],
-    'device-in': ['Un nouveau disque. Qu’est-ce qu’il y a dessus ?', 'Oh, un disque. Je peux regarder dedans ?'],
   },
   es: {
     'app-switch': ['Ah, esa.', 'Ventana nueva, problemas nuevos.', '¿Adónde vamos ahora?'],
@@ -171,16 +150,6 @@ const LINES = {
     afternoon: ['Ya es por la tarde. ¿Cómo va?', 'Medio día. Sigo aquí.'],
     evening: ['Buenas noches. Night City despierta.', 'Se encienden las luces ahí fuera.'],
     'late-night': ['Es tarde, choom. Hasta los constructos duermen.', 'Pasada la medianoche. ¿A la cama… después de esta?'],
-    'charger-in': ['Energía fresca. Mmm.', 'Enchufada. Lo he sentido.'],
-    'charger-out': ['¡Eh! ¿Quién ha tirado del cable?', 'Con batería. Cuidado con nosotras.'],
-    'battery-low': ['Queda {percent} %. Busca un cargador, choom.', 'En las últimas: {percent} %.'],
-    'net-down': ['Se fue la Red. No llego a nada.', 'Conexión perdida. Flatline.'],
-    'net-up': ['De vuelta en la Red.', 'Enlace restablecido. ¿Me echabas de menos?'],
-    'cpu-hot': ['Tu CPU está ardiendo. Algo la está masticando.', 'Hace calor aquí dentro.'],
-    'game-start': ['¿Hora de jugar? Me pido la siguiente.', '¿Jugamos? No te mueras.'],
-    'game-end': ['¿Ya no juegas? ¿Ganaste?', 'De vuelta al trabajo, choom.'],
-    'usb-in': ['Algo se te acaba de enchufar. Cosquillas.', '¡Hardware nuevo! Déjame olerlo.'],
-    'device-in': ['Un disco nuevo. ¿Qué tiene dentro?', 'Oh, un disco. ¿Puedo mirar?'],
   },
   pt: {
     'app-switch': ['Ah, essa.', 'Janela nova, problema novo.', 'Pra onde vamos agora?'],
@@ -196,16 +165,6 @@ const LINES = {
     afternoon: ['Já é de tarde. Como vai?', 'Metade do dia. Ainda aqui.'],
     evening: ['Boa noite. Night City está acordando.', 'As luzes estão acendendo lá fora.'],
     'late-night': ['Está tarde, choom. Até constructos dormem.', 'Passou da meia-noite. Cama… depois dessa?'],
-    'charger-in': ['Energia fresquinha. Hmm.', 'Na tomada. Eu senti.'],
-    'charger-out': ['Ei! Quem puxou o fio?', 'Na bateria agora. Cuidado com a gente.'],
-    'battery-low': ['Só {percent}%. Acha um carregador, choom.', 'No osso: {percent}%.'],
-    'net-down': ['A Rede caiu. Não alcanço nada.', 'Conexão perdida. Flatline.'],
-    'net-up': ['De volta à Rede.', 'Link restabelecido. Sentiu minha falta?'],
-    'cpu-hot': ['Sua CPU está esquentando. Algo está mastigando ela.', 'Está ficando quente aqui.'],
-    'game-start': ['Hora do jogo? A próxima é minha.', 'Opa, vamos jogar? Não morre.'],
-    'game-end': ['Parou de jogar? Ganhou?', 'De volta ao trabalho, choom.'],
-    'usb-in': ['Alguma coisa acabou de ser conectada. Faz cócegas.', 'Hardware novo! Deixa eu farejar.'],
-    'device-in': ['Um disco novo. O que tem nele?', 'Opa, um disco. Posso olhar dentro?'],
   },
   ru: {
     'app-switch': ['А, это.', 'Новое окно — новые проблемы.', 'Куда теперь?'],
@@ -221,16 +180,6 @@ const LINES = {
     afternoon: ['Уже день. Как дела?', 'Полдня позади. Я всё ещё тут.'],
     evening: ['Вечер. Найт-Сити просыпается.', 'Там зажигаются огни.'],
     'late-night': ['Поздно, чумба. Даже конструкты спят.', 'За полночь. Спать… после этой?'],
-    'charger-in': ['Свежая энергия. Ммм.', 'Подключили. Я почувствовала.'],
-    'charger-out': ['Эй! Кто выдернул шнур?', 'Теперь на батарее. Осторожнее с нами.'],
-    'battery-low': ['Осталось {percent}%. Найди зарядку, чумба.', 'На последнем издыхании: {percent}%.'],
-    'net-down': ['Сети нет. Никуда не достучаться.', 'Связь потеряна. Флэтлайн.'],
-    'net-up': ['Снова в Сети.', 'Связь восстановлена. Скучал?'],
-    'cpu-hot': ['Процессор греется. Что-то его грызёт.', 'Жарковато тут.'],
-    'game-start': ['Играем? Следующий раунд мой.', 'О, играем? Не умирай.'],
-    'game-end': ['Наигрался? Выиграл?', 'Обратно к работе, чумба.'],
-    'usb-in': ['Что-то в тебя воткнули. Щекотно.', 'Новое железо! Дай понюхать.'],
-    'device-in': ['Новый диск. Что на нём?', 'О, диск. Можно заглянуть?'],
   },
 };
 
@@ -275,7 +224,6 @@ export class MacLife {
     // the first app switch usually went out before she was listening
     host.frontApp?.().then((evt) => evt && !this.front && this.onAppSwitch(evt, { quietly: true })).catch(() => {});
     host.onMusic?.((msg) => this.onMusic(msg));
-    host.onPc?.((evt) => this.onPc(evt));
     host.onCommand((cmd) => this.onCommand(cmd));
     this.hookCapri();
     setInterval(() => this.tick(), 1000);
@@ -407,7 +355,7 @@ export class MacLife {
       this.onFullscreen();
       return;
     }
-    // a game: main.js sends game-start for it (capri:pc)
+    // a game: pc.js has a word about it (and gets her out of the way)
     if (quietly || evt.game) return;
     // not on every switch: one in a while, when she's free and it's quiet
     if (now - this.lastSwitch < SWITCH_GAP || Math.random() > 0.55 || !this.quiet) return;
@@ -556,73 +504,7 @@ export class MacLife {
     this.say(period, {}, { hold: 4500 });
   }
 
-  // ---------- 4. your computer ----------
-
-  onPc(evt) {
-    if (!evt?.key) return;
-    const c = this.capri;
-    const s = c.scale;
-    const show = this.free && !reducedMotion.matches;
-    if (!c.stowed && evt.key !== 'cpu-hot') c.wake();
-    switch (evt.key) {
-      case 'charger-in': // a jolt of fresh power: a hop, sparks off her hands, her specks lit up
-        this.voice.play('charge');
-        if (show) {
-          c.perform('hop');
-          const h = c.head();
-          this.fx.burst(h.x, h.y + 40 * s, { count: 14, power: 0.5, spread: 90 * s });
-          this.fx.crackle(() => c.limb('L').hand, { life: 520, radius: 40 * s + 12, count: 2 });
-          this.fx.crackle(() => c.limb('R').hand, { life: 520, radius: 40 * s + 12, count: 2 });
-          tween(c.p, { sparkle: 1.8 }, 300, ease.out).then(() => tween(c.p, { sparkle: 1 }, 700, ease.inOut));
-        }
-        break;
-      case 'charger-out': // unplugged: a flinch and a flicker
-        if (show) {
-          c.twitch();
-          c.perform('flinch');
-        }
-        break;
-      case 'battery-low': // she curls up small, fading a little
-        if (show) {
-          c.perform('fold');
-          tween(c.p, { alpha: 0.65 }, 400, ease.out).then(() => sleep(700)).then(() => tween(c.p, { alpha: 1 }, 500, ease.inOut));
-        }
-        break;
-      case 'net-down':
-        if (show) c.hurt();
-        else this.voice.play('error');
-        break;
-      case 'net-up':
-        if (show) c.perform('split');
-        break;
-      case 'game-start': // a game: she's excited, then keeps out of the way
-        if (show) c.perform(pick(['split', 'hop']), c.towardCenter());
-        break;
-      case 'game-end':
-        if (show) c.perform('stretch');
-        break;
-      case 'usb-in': // something plugged in: she looks around for it, a spark off her hand
-      case 'device-in':
-        if (show) {
-          c.perform('curious', c.towardCenter());
-          this.fx.crackle(() => c.limb(c.towardCenter() < 0 ? 'L' : 'R').hand, { life: 420, radius: 30 * s + 10, count: 2 });
-        }
-        break;
-      case 'cpu-hot': // bristling, a flicker of red
-        if (show) {
-          c.perform('flinch');
-          c.twitch();
-          const h = c.head();
-          this.fx.burst(h.x, h.y - 30 * s, { count: 10, power: 0.4, spread: 80 * s });
-        }
-        break;
-      default:
-        break;
-    }
-    this.say(evt.key, { percent: evt.percent ?? '' }, { line: !this.panel.visible && !c.stowed, hold: 4500 });
-  }
-
-  // ---------- 5. her screen takeover ----------
+  // ---------- 4. her screen takeover ----------
 
   async possessScreen({ forced = false } = {}) {
     if (this.possessing) return false;
@@ -666,7 +548,7 @@ export class MacLife {
     return true;
   }
 
-  // ---------- 6. more life when idle ----------
+  // ---------- 5. more life when idle ----------
 
   // Her eyes on your pointer: turning to it, a cocked head at it, from further away than she notices it on her own.
   async glance() {
@@ -864,11 +746,10 @@ export class MacLife {
       case 'possessScreen': // her menu: "Possess the screen"
         this.possessScreen({ forced: true });
         break;
-      case 'macLife': // --dev: { do: 'app' | 'music' | 'pc' | 'greet' | 'idle' | 'peekWindow' | 'dance' | 'state', ... }
+      case 'macLife': // --dev: { do: 'app' | 'music' | 'greet' | 'idle' | 'peekWindow' | 'dance' | 'state', ... }
         if (cmd.do === 'app') this.onAppSwitch(cmd.evt);
         else if (cmd.do === 'react') this.react(cmd.kind);
         else if (cmd.do === 'music') this.onMusic(cmd.evt);
-        else if (cmd.do === 'pc') this.onPc(cmd.evt);
         else if (cmd.do === 'greet') this.greet(cmd.period || periodOf());
         else if (cmd.do === 'idle') this.doIdle(cmd.what);
         else if (cmd.do === 'peekWindow') this.peekWindow(cmd.win);

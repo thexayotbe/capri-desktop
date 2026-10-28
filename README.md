@@ -22,15 +22,17 @@ goes to mochiiwuff), on the `mac-features` branch, with extra life for macOS. Ru
   CGWindowList), on every Space and over full-screen apps, no Dock icon (she's in the menu bar).
 - **Her voice**: a spoken line for every reaction (`assets/voice/`, made with ElevenLabs), on top of her synth sounds.
 - **She notices what you're on**: browser, code / terminal, chat apps (a look, a word, now and then, rate-limited);
-  a full-screen app; a game or launcher coming up (Steam, Epic, CrossOver, Battle.net, GOG, Heroic...) and quitting.
+  a full-screen app.
 - **She dances to your music** when Spotify or Music is playing. They're only asked when already running, never launched.
 - **The time of day**: one greeting per morning / afternoon / evening / late night; sleepier after midnight.
-- **Your computer**: charger in / out, low battery, network down / up, CPU running hot, a USB device plugged in, a disk
-  mounted (disk images left out).
+- **Her PC senses on the Mac** (upstream's *She feels your PC* and *Jealous of other AIs*, fed by the Swift helper):
+  a game or launcher in front (Steam, Epic, CrossOver, Battle.net, GOG, Heroic...), a USB device plugged in, an external
+  disk mounted (disk images left out), another AI's own app (ChatGPT, Claude, Copilot...) in front. Charger, battery,
+  network and CPU work as upstream. Each reaction has its voice line.
 - **Screen possession**: every 20-40 minutes she takes over the whole screen for 2-4 seconds (RGB-split glitch,
   "CAPRI ONLINE."). Click-through, it never blocks anything.
 - **More to do when idle**: stretches, yawns, eyes on your pointer, following it a little, peeking out from behind a
-  window, short hops. Throw her hard at a side of the screen and she slams into it.
+  window, short hops.
 
 **Shortcuts**: `⌃⌥C` (Ctrl+Option+C) calls her to the pointer; `⌃⌥⇧C` (Ctrl+Option+Shift+C) puts her away / brings
 her back.
@@ -119,11 +121,29 @@ Same license as upstream: [PolyForm Noncommercial 1.0.0](LICENSE), free, never f
   On the way down, a window ledge can catch her.
 - **Drop her on a window**: drag her and let go with her hips on a window's top edge, she sits there.
   Let go anywhere else and she falls.
+- **Throw her**: held, she swings from your pointer, legs kicking. Let go of her mid-swing and she flies off with it:
+  one long streak for two drawings, then she tumbles, her mane and her other minds trailing behind. Into an edge of the
+  screen, she crashes (stuck to it for a moment, flattened, and the glass cracks where she hit it) and bounces off. On a
+  window, she catches the ledge, or bounces off it and it shakes. Coming down upright, she lands on her feet and skids
+  a little; otherwise she slides along the floor and lies there a moment, seeing stars, before she springs back up and
+  shakes it off. You can catch her in the air. Once, it rattles her (or she loves it, if she likes you); three times in
+  a row, she gets mad, zaps your pointer and won't let you pick her up for a bit.
+- **Several screens**: when your pointer stays on another screen for a few seconds, she follows you. If it's right next
+  to hers, she crouches, jumps through the edge and comes out of a tear on the other side; otherwise she teleports
+  there. Thrown at a screen next door, she goes over to it. When Claude needs you or a reminder comes due, she comes to
+  the screen you're on. Her menu › **Screen** to pick one, or untick *Follow me across screens*.
 - **She possesses your windows**, like in the show where she slips into bodies and systems: now and then she dives
   into the window she's sitting on. Red lightning races round its frame, slices of it glitch, and the window looks
   at you with her eyes and her zigzag grin, more eyes opening all over it, every pupil on your pointer, and she laughs.
   Then she comes out of another window. Nothing is drawn over the windows in front of it, and the window's contents
   are never read: it's just drawn over, for two seconds. If it bothers you, untick *Possess my windows* in the tray menu.
+- **She feels your PC** (she lives in it, after all): the processor at full tilt for a while, she overheats, fans
+  herself and heat comes off her mane. On a laptop: the charger plugged in or out, she feels it; the battery running
+  low, she sags and flickers. The network gone, she takes the hit; back, she's glad. A USB stick plugged in, she dives
+  into it (by the clock), rummages around and comes back with her verdict. A phone, a controller, a headset or anything
+  else plugged in: a bolt toward the clock and a word about it. A game in front of you (Steam, Epic, Riot, Xbox, GOG),
+  she says something about it and puts herself away while you play, then comes back to ask if you won. Untick *React
+  to my PC* in her menu to stop it.
 - **Little flourishes**: a full spin with afterimages, a hop, looking left and right, the cocked head,
   and the other minds in her (her green and red copies) pulling away from her, hanging there, and snapping back in.
 
@@ -136,7 +156,11 @@ Same license as upstream: [PolyForm Noncommercial 1.0.0](LICENSE), free, never f
 ![Asleep down to her mask, waking up, and put away bottom left](docs/sleep.png)
 
 Window tracking works on Windows (a tiny PowerShell helper) and macOS (a tiny Swift helper reading CGWindowList):
-window positions and owners only, no titles, no contents, and on macOS no Accessibility or Screen Recording permission.
+window positions and owners only, never their contents. On Windows the title of the one in front is only used to spot another AI,
+see "She gets attached", and its program's folder to tell a game; the USB sticks plugged in are seen by their drive letter,
+other devices by the name Windows gives them. On macOS there are no titles at all (no Accessibility or Screen Recording permission):
+another AI is spotted by its own app's name (ChatGPT, Claude, Copilot…, not a browser tab), a game by its app,
+external disks by their name and USB devices by the name IOKit gives them.
 On Linux she still floats, peeks, falls and wanders.
 
 On macOS she lives in the menu bar (no Dock icon), on every Space and over full-screen apps.
@@ -190,6 +214,10 @@ The first time, she sets it up with you, with buttons, no terminal:
   Windows' own installer), wakes it up, and downloads a model while a bar fills up: gemma3 (3.3 GB, better in languages
   other than English) or llama3.2 (2 GB, for smaller PCs). On a tiny model (1B and under) she warns you it may talk
   nonsense and offers a better one.
+  Signed in to Ollama? She also offers its free cloud models (`beam:cloud` today): nothing to download, much bigger
+  than what fits on a PC, but your messages go through Ollama's servers. Not signed in, her menu › **AI model** has
+  **Sign in to Ollama (free cloud models)…**. If a cloud model stops answering (signed out, out of free use), she
+  goes back to a model on your PC.
 - **Online, no account**: Pollinations, nothing to set up.
 - **I have a key**: Groq or Gemini (both have a free tier), OpenRouter, OpenAI, Mistral or DeepSeek. You paste your
   key in her panel and she checks it. It's kept on your PC, encrypted with your Windows account, and only ever sent to
@@ -209,15 +237,41 @@ panel says so every time.
 - **Open an app or a game**: anything in your Start menu (Store apps like Spotify included), your Steam and Epic
   games ("open Spotify", "launch Brawlhalla"). Named in your own words, it opens right away; if only her AI came up
   with it, you get a button first.
+- **Your folders and your desktop**: "open my downloads", "open File Explorer", "open the recycle bin", or a file,
+  folder or shortcut on your desktop, by its name. Anything that would run a program or a script (.exe, .bat, .ps1…)
+  always goes behind a button.
+- **Finding your files** ("find my resume", "where's my After Effects project?", "find my last video and open the
+  folder"): by name or by kind of file (an After Effects project is a .aep), across your whole user folder, by name and by
+  what's in them (with Windows' search index), with buttons to open what she found or show its folder. Nothing leaves
+  your PC.
+- **Searching the web** ("search the weather in Paris on Google") and **taking a screenshot** ("take a screenshot":
+  without her in it, saved in Pictures › Screenshots). She knows the date and time, too.
+- **A Roblox game by its name** ("start Steal a Brainrot on Roblox", "in my roblox play grow a garden"): she finds
+  it on Roblox and drops you straight into it (or opens its page if Roblox isn't installed).
 - **Music**: "pause", "next", "louder", "mute"… press the media keys, so it works with Spotify and most players, right
-  as you send it. "Put Daft Punk on Spotify" opens Spotify on a search for it (the app if you have it, else the site).
+  as you send it. "Play Bohemian Rhapsody" or "put some Daft Punk on YouTube" opens the right video on YouTube,
+  straight away (not a search). "Play whatever you want": she picks. "Put Daft Punk on Spotify" opens Spotify on a
+  search for it.
 - **A website**: always behind a button showing where it goes.
 - **Close an app** ("close AM Music", "can you shut Discord down?"): a button with the app's name, and nothing happens
   until you click it. She closes it the way its own close button does, so it can still ask you to save. If it only
   hid in the tray, she offers **Force quit**, again only on your click (unsaved work is lost then). She never closes
   Windows' own pieces, Claude, Ollama or herself.
+- **Reminders** ("remind me in 20 minutes to take out the laundry", "remind me tomorrow at 9 to call the garage"): the
+  time and the text are read straight off your message, even on a tiny model, and a **Cancel** button shows under her
+  answer. Without a time, she asks when. When it's due, she comes and finds you (on the screen you're on, even put
+  away) with **Done** and **10 more min**. If she was off at the time, she brings it up when she's back. Her menu ›
+  **Reminders** lists them, and each one can be cancelled there.
 
-Nothing else: she can't see your screen or your files.
+Nothing else: she doesn't read your files, and only sees your screen when you ask ("look at my screen", "what do you
+see?" in her chat: she looks and answers right there, your conversation in mind).
+
+**She looks at your screen**, if you want. Her menu › **Look at my screen**: her eyes go to the window in front, a
+scanline sweeps it, and she tells you what she makes of it, her way. **Look at my screen now and then** lets her do it
+on her own, every 8 to 15 minutes, when you're there and you've switched windows (off until you tick it). The first
+time, she tells you where the picture goes: to her chat's AI. With an AI on your PC, nothing leaves it; with an online
+one, the picture goes to that service. She never keeps the picture, and her chat remembers what she said for a while.
+It takes a model that can read pictures: gemma3 on your PC, Gemini or OpenAI online (not llama3.2, she'll tell you).
 
 ### Make her yours
 
@@ -232,17 +286,41 @@ Right-click her › **Make her yours…** (or "Make me yours" in her guide), one
 In her chat, "call me Léa" and "remember that my cat is called Neko" work too. All of it stays in her settings on
 your PC.
 
+### She gets attached
+
+The more time you spend together, the more she syncs with you: the days you're both there, the time at your PC, your
+chats, the work of Claude's she watches, the reminders kept. Each one counts a little a day, so it takes a few weeks to
+go all the way. Five stages, **Faint signal**, **Contact**, **In sync**, **Linked** and **Fused**: at each new one, her
+other minds come out to look at you and she tells you. It changes what she says when you click her, how her chat talks
+to you, what she says after a few days without you. Once she's attached, she's glad when you come back to your PC and
+sometimes comes over to your pointer on her own. Where you two stand: at the top of her menu.
+
+**And she gets jealous.** When the window in front of you is another AI (ChatGPT, Gemini, Copilot, Perplexity,
+DeepSeek, Grok, Le Chat, Character.AI, Meta AI, Codex, or Claude when she watches Codex), she notices and says so, more
+or less nicely depending on where you two stand. If you stay on it, once she's attached, she goes and sits on its
+window, glares at you and takes it over, brows down, with a word of hers written across it. Then she sulks: click her
+and she turns her back on you (it passes, and talking it over in her chat helps). Her chat also knows which other AIs
+you used today. To spot them, the title of the window in front is checked against that list of names, on your PC: it's
+never kept or sent anywhere, only the name it matched reaches her. Untick *Jealous of other AIs* in her menu to stop it.
+
+**Her chat knows what just happened.** Mad about being thrown, jealous, dizzy or happy: she greets you that way when the
+chat opens, and her AI (even a small local model) answers in that mood. Mad or sulking, she stays that way until you say
+sorry ("sorry", "my bad"…), or it wears off.
+
+### With the mouse
+
 She only catches the mouse on her actual body (pixel-precise): the rest of the screen works as usual.
 
 - **Click** her: she tells you where Claude is at (nothing going on: a **Talk to me** button, to chat with her).
-- **Drag** her: move her around.
+- **Drag** her: move her around. Let go mid-swing and she flies (see "Throw her").
 - **Click** the panel: it closes.
 - **Ctrl+Alt+C**: she puts herself away (into her biochip, like in the show) and all that's left of her is her mask,
   eyes shut, in the bottom-left corner. Her eyes only open when Claude needs you. Click the mask (or Ctrl+Alt+C again)
   to bring her back.
 - **Her menu**: right-click her (it's also on her tray icon, next to the clock): teleport, look at the satellite, demo,
-  how it works, mission report, talk to her, size, sound, screen, AI model, wander, possess your windows,
-  language, start with Windows, hooks.
+  how it works, mission report, talk to her, look at your screen, reminders, size, sound, screen (and following you across screens), AI
+  model, wander, possess your windows, jealous of other AIs, react to my PC, language, start with Windows, hooks. At the very top:
+  where you two stand.
 
 She speaks **French, English, Spanish, Brazilian Portuguese and Russian**, and picks the language of your system on her
 own. You can choose another one in her menu.
@@ -350,6 +428,10 @@ named like this (`.mp3`, `.wav`, `.ogg` or `.m4a`):
 | `possess` | the window she took over laughs |
 | `blip` | every syllable while she talks |
 | `tick` | a quiet reminder |
+| `throw` | she flies off when you throw her |
+| `crash` | she slams into something |
+| `remind` | a reminder comes due |
+| `jealous` | her jealous hiss |
 
 ## Is it safe?
 
@@ -387,7 +469,15 @@ Claude's last message up to 6,000 characters so she can show it to you, all trun
 Your file contents are never sent: for a write, only its size goes through.
 
 Her chat goes to Ollama on your PC (`127.0.0.1:11434`, or `OLLAMA_HOST`) with what she knows of the moment (the
-project's name, Claude's last action, today's counts). Her mission log stays in her own storage on your PC.
+project's name, Claude's last action, today's counts). On one of Ollama's cloud models (the ones ending in `:cloud`),
+Ollama sends it on to its servers, and her chat says "online AI" instead of "local AI". Her mission log stays in her own storage on your PC, like your
+reminders and where you two stand.
+
+The title of the window in front of you is only checked, on your PC, against a list of AI names (for her jealousy):
+it's never kept or sent anywhere.
+
+When she looks at your screen (only when you ask, or if you ticked *Look at my screen now and then*), a picture of the
+screen goes to her chat's AI: on your PC with Ollama (a local model), to the online service otherwise. It's never written to disk.
 
 ## Art direction
 
@@ -455,20 +545,25 @@ tools/build-cutins.py    cuts the cut-ins and her faces out of frames of the sho
 tools/build-intro.py     cuts her intro's close-ups out of their background, all the same way
 src/main/                Electron: full-screen transparent click-through window, tray, local HTTP bridge
   windows.js / .ps1      where the other windows are (Windows, macOS), so she can sit on them
-  mac/capri-helper.swift macOS: the windows (CGWindowList) and the app in front (NSWorkspace), as JSON lines
-  appkind.js             what kind of app is in front: browser, code, chat or other
-  ollama.js              her chat: the local model, through Ollama
+  mac/capri-helper.swift macOS: the windows (CGWindowList), the app in front (NSWorkspace), disks and USB devices, as JSON lines
+  appkind.js             what kind of app is in front: browser, code, chat, game or other
+  ollama.js              her chat: the local model through Ollama, or one of its cloud models
   apps.js                closing an app you asked her to close (after your click)
 src/renderer/js/
   sprite.js              WebGL shader: head tilt, mane flare, sitting, smears, afterimages, colors, glitch
   acting.js              the exposure sheets: every move, drawing by drawing
-  capri.js               the character: stances, teleport, sitting, peeking, falling, drag, sleep
+  capri.js               the character: stances, teleport, sitting, peeking, falling, thrown, other screens, sleep
   fx.js                  shards, light columns, bolts, glyphs, speed lines, shockwaves, the satellite and the red light, possessed windows, the cut-ins, her intro
   panel.js               the "transmission" panel, her faces, and the ticker
   guide.js               her guide: the tutorials, going to things and pointing at them
   brain.js               turns Claude events into lines and actions
   mission.js             today's mission log, for her report card
   chat.js                talking to her: the conversation, who she is, her answers coming in
+  reminders.js           reminders: reading them off your message, keeping them, when they come due
+  bond.js                how close she is to you, growing over time, and her jealousy of other AIs
+  look.js                she looks at your screen: asking first, the scan, what her AI says about it
+  pc.js                  your PC as she feels it: the processor, the battery, the network, USB sticks, games
+  files.js               finding your files (Windows search index), screenshots
   lines.js               what she says (FR / EN / ES / PT / RU)
   chip.js                her mask: while she sleeps, and bottom left when you put her away
   voice.js               the sounds
@@ -476,7 +571,8 @@ src/renderer/js/
 
 To hack on it: `npm run dev` turns on debug routes on the bridge (`/debug/capture` saves a frame of the window to `captures/`,
 `/debug/testwin` opens test windows she can sit on, one per name, `/debug/mouse` moves and clicks a stand-in pointer
-over Capri's window, without touching the real one, `/debug/type` types in her chat).
+over Capri's window, without touching the real one, `/debug/type` types in her chat, `/debug/menu` lists her menu and
+can click an item of it).
 `npm run dist` builds the Windows installer in `dist/`.
 
 ## Credits and rights
