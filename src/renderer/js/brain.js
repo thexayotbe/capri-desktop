@@ -305,7 +305,7 @@ export class Brain {
   }
 
   // Is the window you typed your prompt in (Claude's) no longer the one in front?
-  // Unknown (no window tracking, macOS / Linux) counts as no.
+  // Unknown (no window tracking: Linux) counts as no.
   away(s) {
     const { fg } = this.capri.windows;
     return Boolean(s.window && fg && fg !== s.window);

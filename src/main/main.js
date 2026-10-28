@@ -13,6 +13,7 @@ const config = require('./config');
 const { TRAY, LANGS } = require('./labels');
 const { createBridge } = require('./bridge');
 const { startWindowWatch } = require('./windows');
+const { appKind } = require('./appkind');
 const llm = require('./llm');
 const setup = require('./setup');
 const apps = require('./apps');
@@ -28,6 +29,11 @@ const PORT = Number(process.env.CAPRI_PORT) || 47823;
 const SOUND_EXT = /\.(mp3|wav|ogg|m4a)$/i;
 
 const OLLAMA_SITE = 'https://ollama.com';
+const MAC = process.platform === 'darwin';
+// her hide / show shortcut; on macOS Ctrl+Option+C calls her to the pointer instead (her menu)
+const TOGGLE_KEY = MAC ? 'Control+Alt+Shift+C' : 'Control+Alt+C';
+// her shortcut to call her to the pointer, picked in her menu (not the hide / show one)
+const SUMMON_KEYS = ['Control+Alt+C', 'Control+Alt+Space', 'Control+Shift+Space', 'Control+Alt+Shift+S'].filter((k) => k !== TOGGLE_KEY);
 
 protocol.registerSchemesAsPrivileged([
   { scheme: 'capri', privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } },
@@ -40,6 +46,8 @@ let demoTimer = null;
 let windowWatch = null;
 // the watcher only speaks when something changes: the overlay asks for this when it (re)loads
 let lastWindows = null;
+let frontApp = null; // macOS: the app in front, as last sent to the overlay (capri:app-switch)
+let summonKey = null; // the shortcut that calls her to the pointer, as registered (null: none)
 let chatModels = null; // the provider's models, as last seen (null: not reached)
 let chatError = null;  // why not, when the provider said
 let chatErrorCode = null; // 'nokey' or 'nourl': what her setup should ask for
@@ -113,6 +121,7 @@ function rearmOverlay() {
   overlay.setIgnoreMouseEvents(false);
   overlay.setIgnoreMouseEvents(true, { forward: true });
   overlay.setAlwaysOnTop(true, 'screen-saver');
+  pinOverlay();
   fitOverlay();
   sendCommand('rearmed'); // click-through again: she waits for the pointer to be on her
   console.log('[capri] mouse hook set up again');
@@ -128,6 +137,13 @@ function raiseOverlay() {
       overlay.moveTop();
     }, wait);
   }
+}
+
+// macOS: on every Space and over full-screen apps too (the Dock icon is hidden for that, main()).
+function pinOverlay() {
+  if (!MAC || !overlay || overlay.isDestroyed()) return;
+  overlay.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true });
+  overlay.setAlwaysOnTop(true, 'screen-saver');
 }
 
 function createOverlay() {
@@ -158,6 +174,7 @@ function createOverlay() {
   });
 
   overlay.setAlwaysOnTop(true, 'screen-saver');
+  pinOverlay();
   overlay.setIgnoreMouseEvents(true, { forward: true });
   overlay.loadURL('capri://app/src/renderer/index.html');
   // always shown: put away, she's still there as her biochip in the corner. Sized again first:
@@ -180,6 +197,53 @@ function createOverlay() {
 
 function sendCommand(name, payload = {}) {
   overlay?.webContents.send('capri:command', { name, ...payload });
+}
+
+// A line of hers by key (CONTRACT.md), for whoever voices them in the overlay.
+function say(key) {
+  if (DEV) console.log('[capri] say', key);
+  overlay?.webContents.send('capri:say', { key });
+}
+
+// Her shortcut that calls her to the pointer: she moves to its screen if it's on another one.
+function summon() {
+  if (!overlay) return;
+  const display = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+  if (display.id !== targetDisplay().id) {
+    config.save({ displayId: display.id });
+    fitOverlay();
+    rebuildTray();
+  }
+  sendCommand('summon');
+}
+
+// The one picked in her menu (none: ''), or a word in her menu if another app has it already.
+function registerSummon() {
+  if (summonKey) globalShortcut.unregister(summonKey);
+  summonKey = null;
+  const wanted = config.load().summonKey;
+  if (!wanted) return;
+  if (globalShortcut.register(wanted, summon)) summonKey = wanted;
+  else console.error('[capri] summon shortcut taken by another app:', wanted);
+}
+
+function pickSummon(key) {
+  config.save({ summonKey: key });
+  registerSummon();
+  rebuildTray();
+}
+
+// ⌃⌥C on macOS, Ctrl+Alt+C elsewhere
+const keyLabel = (accel) => (MAC
+  ? accel.replace('Control+', '⌃').replace('Alt+', '⌥').replace('Shift+', '⇧').replace('Command+', '⌘')
+  : accel.replace('Control+', 'Ctrl+'));
+
+// macOS: the app you switched to (or that went full screen), for her to react (capri:app-switch).
+function onFrontApp({ name, bundleId, fullscreen }) {
+  const before = frontApp;
+  frontApp = { name, bundleId, category: appKind({ bundleId, name }), fullscreen };
+  overlay?.webContents.send('capri:app-switch', frontApp);
+  if (fullscreen && !(before?.fullscreen && before.bundleId === bundleId)) say('fullscreen-app');
 }
 
 // Ctrl+Alt+C: she folds herself away into her biochip in the corner, or comes back out of it.
@@ -217,7 +281,7 @@ const DEMO_TERMINAL = `<body style="margin:0;background:#14101c;color:#8f8aa3;fo
 function demoWindow(open) {
   demoWin?.destroy();
   demoWin = null;
-  if (!open || process.platform !== 'win32') return false;
+  if (!open || !['win32', 'darwin'].includes(process.platform)) return false;
   const b = overlay.getBounds();
   demoWin = new BrowserWindow({
     x: Math.round(b.x + b.width * 0.5 - 310), y: Math.round(b.y + b.height * 0.42), width: 620, height: 300,
@@ -260,8 +324,11 @@ function rebuildTray() {
   const cfg = config.load();
   const hookState = activeHooks().status();
   const watched = activeAssistant();
-  const t = Object.fromEntries(Object.entries(TRAY[resolveLang(cfg.lang)]).map(([key, value]) =>
-    [key, typeof value === 'string' && watched.id !== 'claude' ? value.replaceAll('Claude Code', watched.name) : value]));
+  const t = Object.fromEntries(Object.entries(TRAY[resolveLang(cfg.lang)]).map(([key, value]) => {
+    if (typeof value !== 'string') return [key, value];
+    if (watched.id !== 'claude') value = value.replaceAll('Claude Code', watched.name);
+    return [key, MAC ? value.replaceAll('Windows', 'macOS') : value];
+  }));
 
   const displays = screen.getAllDisplays();
   const current = targetDisplay().id;
@@ -276,7 +343,17 @@ function rebuildTray() {
     ...(cfg.claude ? [{ label: t.report, click: () => sendCommand('report') }] : []),
     { label: t.talk, click: () => sendCommand('chat') },
     { label: t.custom, click: () => sendCommand('customize') },
-    { label: cfg.visible ? t.hide : t.show, accelerator: 'Ctrl+Alt+C', click: () => toggleVisible() },
+    { label: cfg.visible ? t.hide : t.show, accelerator: TOGGLE_KEY, click: () => toggleVisible() },
+    {
+      label: t.summon,
+      submenu: [
+        ...SUMMON_KEYS.map((key) => ({
+          label: keyLabel(key) + (cfg.summonKey === key && summonKey !== key ? ` — ${t.summonTaken}` : ''),
+          type: 'radio', checked: cfg.summonKey === key, click: () => pickSummon(key),
+        })),
+        { label: t.summonOff, type: 'radio', checked: !cfg.summonKey, click: () => pickSummon('') },
+      ],
+    },
     { type: 'separator' },
     {
       label: t.size,
@@ -494,7 +571,13 @@ async function pickClaudeFolder() {
 }
 
 function createTray() {
-  const icon = nativeImage.createFromPath(path.join(ROOT, 'assets', 'icons', 'tray.png'));
+  const file = path.join(ROOT, 'assets', 'icons', 'tray.png');
+  let icon = nativeImage.createFromPath(file);
+  if (MAC) {
+    // its 32 pixels as a 16-point icon: menu bar size, sharp on a Retina screen
+    icon = nativeImage.createEmpty();
+    icon.addRepresentation({ scaleFactor: 2, buffer: fs.readFileSync(file) });
+  }
   tray = new Tray(icon);
   tray.setToolTip('Capri');
   tray.on('click', () => sendCommand('status'));
@@ -522,6 +605,7 @@ function registerIpc() {
   ipcMain.handle('claude:found', () => fs.existsSync(path.dirname(activeHooks().status().file))); // Claude Code keeps its settings there
   ipcMain.on('claude:help', () => shell.openExternal(activeAssistant().help));
   ipcMain.handle('windows:get', () => lastWindows);
+  ipcMain.handle('app:front', () => frontApp); // macOS: the app in front now (capri:app-switch)
   // talking to her (chat.js): is Ollama there, with a model to talk with
   ipcMain.handle('chat:status', async () => {
     const cfg = config.load(true); // keys may have been edited by hand
@@ -726,6 +810,19 @@ async function debugHandler(route, body) {
     }
     return { ok: true };
   }
+  if (route === 'state') {
+    // what the window watch and her window look like now (macOS: Spaces, Dock, the app in front)
+    return {
+      ok: true, windows: lastWindows, frontApp, summonKey, bounds: overlay.getBounds(), onTop: overlay.isAlwaysOnTop(),
+      allSpaces: overlay.isVisibleOnAllWorkspaces?.() ?? null, dock: MAC ? app.dock?.isVisible() : null, tray: tray?.getBounds(),
+    };
+  }
+  if (route === 'listen') {
+    // her lines asked for (capri:say) and the apps you switch to (capri:app-switch), in the --dev log
+    await overlay.webContents.executeJavaScript(`document.addEventListener('capri:say', (e) => console.log('[say] ' + e.detail.key));
+      window.host.onAppSwitch((a) => console.log('[app-switch] ' + JSON.stringify(a))); true`);
+    return { ok: true };
+  }
   if (route === 'capture') {
     const image = await overlay.webContents.capturePage();
     // installed, the app's own folder is read-only: its data folder instead
@@ -753,6 +850,8 @@ function applyRender() {
 }
 
 function main() {
+  // a separate profile (config, single-instance lock), to run a second Capri next to yours while testing
+  if (process.env.CAPRI_USER_DATA) app.setPath('userData', path.resolve(process.env.CAPRI_USER_DATA));
   applyRender();
   if (!app.requestSingleInstanceLock()) {
     app.quit();
@@ -763,6 +862,8 @@ function main() {
 
   app.whenReady().then(() => {
     if (!['codex', 'claude'].includes(config.load().assistant)) config.save({ assistant: activeAssistant().id });
+    // macOS: no Dock icon, she lives in the menu bar (and needs that to show over full-screen apps)
+    if (MAC) app.dock?.hide();
     serveProtocol();
     registerIpc();
     createOverlay();
@@ -775,6 +876,12 @@ function main() {
         lastWindows = data;
         overlay?.webContents.send('windows:update', data);
       },
+      onApp: onFrontApp,
+      // another Space: she's on it already (pinOverlay), back on top of what's there
+      onSpace: () => {
+        pinOverlay();
+        overlay?.moveTop();
+      },
     });
     createBridge({
       port: PORT,
@@ -782,7 +889,8 @@ function main() {
       onEvent: (evt) => !llm.isChatSession(evt.session_id) && overlay?.webContents.send('claude:event', evt),
       onDebug: DEV ? debugHandler : null,
     });
-    globalShortcut.register('Control+Alt+C', () => toggleVisible());
+    globalShortcut.register(TOGGLE_KEY, () => toggleVisible());
+    registerSummon();
     llm.restoreClaude(readMemory().claude);
     refreshModels(); // for her menu's model list
     setTimeout(() => launch.launchables().catch(() => {}), 20000); // what she can open, before you ask

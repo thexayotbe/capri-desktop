@@ -18,6 +18,7 @@ const TRAY = {
     possess: 'Posséder mes fenêtres', lang: 'Langue', auto: 'Automatique (système)', startup: 'Lancer au démarrage',
     hooksOn: 'Hooks Claude Code : installés', hooksOff: 'Installer les hooks Claude Code',
     hooksRemove: 'Retirer les hooks Claude Code', forget: 'Oublier nos conversations', quit: 'Quitter',
+    summon: 'La faire venir au pointeur', summonOff: 'Aucun', summonTaken: 'pris par une autre app',
   },
   en: {
     name: 'English',
@@ -33,6 +34,7 @@ const TRAY = {
     possess: 'Possess my windows', lang: 'Language', auto: 'Automatic (system)', startup: 'Start with Windows',
     hooksOn: 'Claude Code hooks: installed', hooksOff: 'Install Claude Code hooks',
     hooksRemove: 'Remove Claude Code hooks', forget: 'Forget our conversations', quit: 'Quit',
+    summon: 'Summon her to the pointer', summonOff: 'None', summonTaken: 'taken by another app',
   },
   es: {
     name: 'Español',
@@ -48,6 +50,7 @@ const TRAY = {
     possess: 'Poseer mis ventanas', lang: 'Idioma', auto: 'Automático (sistema)', startup: 'Iniciar con Windows',
     hooksOn: 'Hooks de Claude Code: instalados', hooksOff: 'Instalar los hooks de Claude Code',
     hooksRemove: 'Quitar los hooks de Claude Code', forget: 'Olvidar nuestras conversaciones', quit: 'Salir',
+    summon: 'Llamarla al puntero', summonOff: 'Ninguno', summonTaken: 'ocupado por otra app',
   },
   pt: {
     name: 'Português (Brasil)',
@@ -63,6 +66,7 @@ const TRAY = {
     possess: 'Possuir minhas janelas', lang: 'Idioma', auto: 'Automático (sistema)', startup: 'Iniciar com o Windows',
     hooksOn: 'Hooks do Claude Code: instalados', hooksOff: 'Instalar os hooks do Claude Code',
     hooksRemove: 'Remover os hooks do Claude Code', forget: 'Esquecer nossas conversas', quit: 'Sair',
+    summon: 'Chamá-la até o ponteiro', summonOff: 'Nenhum', summonTaken: 'já usado por outro app',
   },
   ru: {
     name: 'Русский',
@@ -78,6 +82,7 @@ const TRAY = {
     possess: 'Вселяться в мои окна', lang: 'Язык', auto: 'Автоматически (системный)', startup: 'Запускать вместе с Windows',
     hooksOn: 'Хуки Claude Code: установлены', hooksOff: 'Установить хуки Claude Code',
     hooksRemove: 'Удалить хуки Claude Code', forget: 'Забыть наши разговоры', quit: 'Выйти',
+    summon: 'Позвать её к курсору', summonOff: 'Нет', summonTaken: 'занято другим приложением',
   },
 };
 
