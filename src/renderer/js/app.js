@@ -3,6 +3,7 @@ import { FxLayer, GRAB_FRAMES } from './fx.js';
 import { Chip, Mask } from './chip.js';
 import { Panel } from './panel.js';
 import { Voice } from './voice.js';
+import { Speech, say } from './speech.js';
 import { Brain } from './brain.js';
 import { Guide } from './guide.js';
 import { Mission } from './mission.js';
@@ -81,6 +82,10 @@ async function boot() {
     fx,
     voice,
   });
+  // her spoken lines: 'capri:say' events from anywhere, and from main.js
+  const speech = new Speech({ voice, capri });
+  speech.configure(config);
+  host.onSay?.((msg) => speech.say(msg?.key, msg || {}));
   capri.wander = config.wander;
   capri.possessWindows = config.possess;
   capri.restOn = config.rest || 'corner';
@@ -311,6 +316,9 @@ async function boot() {
   };
 
   host.onClaudeEvent((evt) => brain.handle(evt));
+  // the network going away and coming back
+  window.addEventListener('offline', () => say('net-down'));
+  window.addEventListener('online', () => say('net-up'));
   host.onWindows((data) => {
     capri.setWindows(data);
     brain.onWindows(data);
@@ -332,6 +340,7 @@ async function boot() {
 
   host.onConfig((cfg) => {
     voice.configure(cfg);
+    speech.configure(cfg);
     capri.wander = cfg.wander;
     capri.possessWindows = cfg.possess;
     capri.restOn = cfg.rest || 'corner';
@@ -500,7 +509,10 @@ async function boot() {
   // (put away last time: she starts in her biochip)
   if (config.visible === false) capri.stowNow();
   else if (intro) await capri.intro(capri.spot('post'));
-  else await capri.materialize(capri.spot('post'));
+  else {
+    await capri.materialize(capri.spot('post'));
+    say('hello');
+  }
   // Windows has its animations off and she's following it: she barely moves. The first time, she
   // says so and asks whether to move anyway (her menu › Animations changes it later).
   if (reducedMotion.setting === 'auto' && reducedMotion.system && !config.motionAsked) {

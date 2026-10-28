@@ -8,6 +8,9 @@ const DEFAULTS = {
   scale: 0.6,        // sprite scale, 0.6 ≈ 250px tall
   muted: false,
   volume: 0.7,
+  voice: true,       // her spoken lines (assets/voice)
+  voiceVolume: 0.8,
+  chattiness: 'normal', // how often she speaks up: 'quiet', 'normal' or 'chatty'
   lang: 'auto',      // 'auto' follows the system language, or 'fr' / 'en'
   displayId: null,   // null = primary display
   wander: true,      // random teleports when idle

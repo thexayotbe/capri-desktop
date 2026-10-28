@@ -1,0 +1,632 @@
+{
+ "hello": [
+  {
+   "file": "hello/01.ogg",
+   "text": "hi, choom!"
+  },
+  {
+   "file": "hello/02.ogg",
+   "text": "miss me? course you did."
+  },
+  {
+   "file": "hello/03.ogg",
+   "text": "found you again, choom."
+  },
+  {
+   "file": "hello/04.ogg",
+   "text": "we're back online. hi!"
+  }
+ ],
+ "teleport": [
+  {
+   "file": "teleport/01.ogg",
+   "text": "blink and I'm gone."
+  },
+  {
+   "file": "teleport/02.ogg",
+   "text": "rerouting... boo!"
+  },
+  {
+   "file": "teleport/03.ogg",
+   "text": "new coordinates."
+  }
+ ],
+ "wake": [
+  {
+   "file": "wake/01.ogg",
+   "text": "mmh... rebooting."
+  },
+  {
+   "file": "wake/02.ogg",
+   "text": "systems up. what'd I miss, choom?"
+  },
+  {
+   "file": "wake/03.ogg",
+   "text": "I wasn't asleep. I was listening."
+  }
+ ],
+ "sleep": [
+  {
+   "file": "sleep/01.ogg",
+   "text": "going dark for a bit."
+  },
+  {
+   "file": "sleep/02.ogg",
+   "text": "wake me if something breaks."
+  },
+  {
+   "file": "sleep/03.ogg",
+   "text": "powering down... nighty-night, choom."
+  }
+ ],
+ "mouse-near": [
+  {
+   "file": "mouse-near/01.ogg",
+   "text": "hm? whatcha doing, choom?"
+  },
+  {
+   "file": "mouse-near/02.ogg",
+   "text": "I see you."
+  },
+  {
+   "file": "mouse-near/03.ogg",
+   "text": "careful. I bite."
+  }
+ ],
+ "zap-cursor": [
+  {
+   "file": "zap-cursor/01.ogg",
+   "text": "zap."
+  },
+  {
+   "file": "zap-cursor/02.ogg",
+   "text": "bzzt! gotcha."
+  },
+  {
+   "file": "zap-cursor/03.ogg",
+   "text": "keep your cursor to yourself."
+  }
+ ],
+ "grabbed": [
+  {
+   "file": "grabbed/01.ogg",
+   "text": "hey! hands off, choom!"
+  },
+  {
+   "file": "grabbed/02.ogg",
+   "text": "whoa! put me down!"
+  },
+  {
+   "file": "grabbed/03.ogg",
+   "text": "that tickles."
+  }
+ ],
+ "thrown": [
+  {
+   "file": "thrown/01.ogg",
+   "text": "wheeee!"
+  },
+  {
+   "file": "thrown/02.ogg",
+   "text": "you'll pay for this!"
+  },
+  {
+   "file": "thrown/03.ogg",
+   "text": "aaah! rude!"
+  }
+ ],
+ "crash-wall": [
+  {
+   "file": "crash-wall/01.ogg",
+   "text": "ow. that's a firewall."
+  },
+  {
+   "file": "crash-wall/02.ogg",
+   "text": "ow! who put that there?"
+  },
+  {
+   "file": "crash-wall/03.ogg",
+   "text": "seeing double... triple."
+  }
+ ],
+ "caught": [
+  {
+   "file": "caught/01.ogg",
+   "text": "nice catch, choom."
+  },
+  {
+   "file": "caught/02.ogg",
+   "text": "hah! saved."
+  },
+  {
+   "file": "caught/03.ogg",
+   "text": "my hero. don't let it go to your head."
+  }
+ ],
+ "angry": [
+  {
+   "file": "angry/01.ogg",
+   "text": "okay. now I'm mad."
+  },
+  {
+   "file": "angry/02.ogg",
+   "text": "do that again. I dare you."
+  },
+  {
+   "file": "angry/03.ogg",
+   "text": "I will fry your drivers."
+  }
+ ],
+ "claude-working": [
+  {
+   "file": "claude-working/01.ogg",
+   "text": "Claude's cooking. I'm watching."
+  },
+  {
+   "file": "claude-working/02.ogg",
+   "text": "shh. it's working."
+  },
+  {
+   "file": "claude-working/03.ogg",
+   "text": "lines going in, choom. busy busy."
+  }
+ ],
+ "claude-thinking-long": [
+  {
+   "file": "claude-thinking-long/01.ogg",
+   "text": "still thinking? ugh."
+  },
+  {
+   "file": "claude-thinking-long/02.ogg",
+   "text": "it's chewing on a big one."
+  },
+  {
+   "file": "claude-thinking-long/03.ogg",
+   "text": "tick... tock... tick..."
+  }
+ ],
+ "claude-needs-you": [
+  {
+   "file": "claude-needs-you/01.ogg",
+   "text": "choom! Claude needs you. now."
+  },
+  {
+   "file": "claude-needs-you/02.ogg",
+   "text": "hey! it's asking for permission!"
+  },
+  {
+   "file": "claude-needs-you/03.ogg",
+   "text": "eyes over here, choom. it's waiting on you."
+  },
+  {
+   "file": "claude-needs-you/04.ogg",
+   "text": "psst. your turn."
+  }
+ ],
+ "claude-error": [
+  {
+   "file": "claude-error/01.ogg",
+   "text": "oops. something broke."
+  },
+  {
+   "file": "claude-error/02.ogg",
+   "text": "error! not my fault. probably."
+  },
+  {
+   "file": "claude-error/03.ogg",
+   "text": "flatlined. nice."
+  }
+ ],
+ "claude-done": [
+  {
+   "file": "claude-done/01.ogg",
+   "text": "done. told you we're good."
+  },
+  {
+   "file": "claude-done/02.ogg",
+   "text": "flawless. as always."
+  },
+  {
+   "file": "claude-done/03.ogg",
+   "text": "job's done, choom. you're welcome."
+  },
+  {
+   "file": "claude-done/04.ogg",
+   "text": "too easy. next!"
+  }
+ ],
+ "victory-laugh": [
+  {
+   "file": "victory-laugh/01.ogg",
+   "text": "ahahahaha!"
+  },
+  {
+   "file": "victory-laugh/02.ogg",
+   "text": "hehehe!"
+  },
+  {
+   "file": "victory-laugh/03.ogg",
+   "text": "ahaha! preem!"
+  }
+ ],
+ "satellite": [
+  {
+   "file": "satellite/01.ogg",
+   "text": "look... it's up there."
+  },
+  {
+   "file": "satellite/02.ogg",
+   "text": "one day I'll reach it."
+  },
+  {
+   "file": "satellite/03.ogg",
+   "text": "there it is. our satellite."
+  }
+ ],
+ "usb-in": [
+  {
+   "file": "usb-in/01.ogg",
+   "text": "ooh, new hardware. let me in."
+  },
+  {
+   "file": "usb-in/02.ogg",
+   "text": "what's this? a snack?"
+  },
+  {
+   "file": "usb-in/03.ogg",
+   "text": "plugged in. I'm in it now."
+  }
+ ],
+ "device-in": [
+  {
+   "file": "device-in/01.ogg",
+   "text": "new device. hi, little thing."
+  },
+  {
+   "file": "device-in/02.ogg",
+   "text": "something connected. scanning..."
+  },
+  {
+   "file": "device-in/03.ogg",
+   "text": "another toy for me?"
+  }
+ ],
+ "game-start": [
+  {
+   "file": "game-start/01.ogg",
+   "text": "game time! don't die, choom."
+  },
+  {
+   "file": "game-start/02.ogg",
+   "text": "ooh, playing? I'll backseat."
+  },
+  {
+   "file": "game-start/03.ogg",
+   "text": "go get 'em. I'll watch."
+  }
+ ],
+ "game-end": [
+  {
+   "file": "game-end/01.ogg",
+   "text": "gg, choom. kinda."
+  },
+  {
+   "file": "game-end/02.ogg",
+   "text": "done already?"
+  },
+  {
+   "file": "game-end/03.ogg",
+   "text": "that was... a performance."
+  }
+ ],
+ "cpu-hot": [
+  {
+   "file": "cpu-hot/01.ogg",
+   "text": "it's getting hot in here."
+  },
+  {
+   "file": "cpu-hot/02.ogg",
+   "text": "your CPU's sweating, choom."
+  },
+  {
+   "file": "cpu-hot/03.ogg",
+   "text": "I can hear the fans screaming."
+  }
+ ],
+ "charger-in": [
+  {
+   "file": "charger-in/01.ogg",
+   "text": "ahh... juice."
+  },
+  {
+   "file": "charger-in/02.ogg",
+   "text": "power flowing. mmm, preem."
+  },
+  {
+   "file": "charger-in/03.ogg",
+   "text": "plugged in. that's the stuff."
+  }
+ ],
+ "charger-out": [
+  {
+   "file": "charger-out/01.ogg",
+   "text": "hey! I was drinking that."
+  },
+  {
+   "file": "charger-out/02.ogg",
+   "text": "unplugged? rude."
+  },
+  {
+   "file": "charger-out/03.ogg",
+   "text": "cut the power, huh?"
+  }
+ ],
+ "battery-low": [
+  {
+   "file": "battery-low/01.ogg",
+   "text": "choom... I'm fading..."
+  },
+  {
+   "file": "battery-low/02.ogg",
+   "text": "battery's dying... plug me in..."
+  },
+  {
+   "file": "battery-low/03.ogg",
+   "text": "so... low... on juice..."
+  }
+ ],
+ "net-down": [
+  {
+   "file": "net-down/01.ogg",
+   "text": "the net's gone! I'm blind!"
+  },
+  {
+   "file": "net-down/02.ogg",
+   "text": "connection lost. who did that?"
+  },
+  {
+   "file": "net-down/03.ogg",
+   "text": "all alone in here now."
+  }
+ ],
+ "net-up": [
+  {
+   "file": "net-up/01.ogg",
+   "text": "back on the net. hehe."
+  },
+  {
+   "file": "net-up/02.ogg",
+   "text": "connection restored. I can breathe."
+  },
+  {
+   "file": "net-up/03.ogg",
+   "text": "online again, choom. preem."
+  }
+ ],
+ "possess-window": [
+  {
+   "file": "possess-window/01.ogg",
+   "text": "this window's mine now."
+  },
+  {
+   "file": "possess-window/02.ogg",
+   "text": "let me in... let me in."
+  },
+  {
+   "file": "possess-window/03.ogg",
+   "text": "I live here now."
+  }
+ ],
+ "window-sit": [
+  {
+   "file": "window-sit/01.ogg",
+   "text": "nice ledge."
+  },
+  {
+   "file": "window-sit/02.ogg",
+   "text": "comfy. don't move this one."
+  },
+  {
+   "file": "window-sit/03.ogg",
+   "text": "I'll just sit here."
+  }
+ ],
+ "window-fall": [
+  {
+   "file": "window-fall/01.ogg",
+   "text": "whoa! hey!"
+  },
+  {
+   "file": "window-fall/02.ogg",
+   "text": "you moved my seat!"
+  },
+  {
+   "file": "window-fall/03.ogg",
+   "text": "rude. I was sitting there."
+  }
+ ],
+ "app-switch": [
+  {
+   "file": "app-switch/01.ogg",
+   "text": "ooh, what's this one?"
+  },
+  {
+   "file": "app-switch/02.ogg",
+   "text": "new window. whatcha up to?"
+  }
+ ],
+ "app-switch-browser": [
+  {
+   "file": "app-switch-browser/01.ogg",
+   "text": "browsing again? I'm watching."
+  },
+  {
+   "file": "app-switch-browser/02.ogg",
+   "text": "I see your tabs, choom."
+  },
+  {
+   "file": "app-switch-browser/03.ogg",
+   "text": "don't fall down a rabbit hole."
+  }
+ ],
+ "app-switch-code": [
+  {
+   "file": "app-switch-code/01.ogg",
+   "text": "code time. let's break something."
+  },
+  {
+   "file": "app-switch-code/02.ogg",
+   "text": "ooh, the editor. my favorite."
+  },
+  {
+   "file": "app-switch-code/03.ogg",
+   "text": "write something nice. or don't."
+  }
+ ],
+ "app-switch-chat": [
+  {
+   "file": "app-switch-chat/01.ogg",
+   "text": "who are you talking to? hm?"
+  },
+  {
+   "file": "app-switch-chat/02.ogg",
+   "text": "chatting with someone else?"
+  },
+  {
+   "file": "app-switch-chat/03.ogg",
+   "text": "tell them I said hi."
+  }
+ ],
+ "music-start": [
+  {
+   "file": "music-start/01.ogg",
+   "text": "ooh, music! turn it up."
+  },
+  {
+   "file": "music-start/02.ogg",
+   "text": "I love this one."
+  },
+  {
+   "file": "music-start/03.ogg",
+   "text": "beats incoming. preem."
+  }
+ ],
+ "music-dance": [
+  {
+   "file": "music-dance/01.ogg",
+   "text": "can't stop. won't stop."
+  },
+  {
+   "file": "music-dance/02.ogg",
+   "text": "dance with me, choom!"
+  },
+  {
+   "file": "music-dance/03.ogg",
+   "text": "la la la, la la!"
+  }
+ ],
+ "music-stop": [
+  {
+   "file": "music-stop/01.ogg",
+   "text": "hey, I was dancing!"
+  },
+  {
+   "file": "music-stop/02.ogg",
+   "text": "aww. silence again."
+  }
+ ],
+ "morning": [
+  {
+   "file": "morning/01.ogg",
+   "text": "morning, choom. coffee first."
+  },
+  {
+   "file": "morning/02.ogg",
+   "text": "rise and shine. the net's awake."
+  },
+  {
+   "file": "morning/03.ogg",
+   "text": "good morning! let's break things."
+  }
+ ],
+ "afternoon": [
+  {
+   "file": "afternoon/01.ogg",
+   "text": "afternoon slump? I'm still glitching."
+  },
+  {
+   "file": "afternoon/02.ogg",
+   "text": "half the day gone. keep going, choom."
+  }
+ ],
+ "evening": [
+  {
+   "file": "evening/01.ogg",
+   "text": "evening, choom. Night City's waking up."
+  },
+  {
+   "file": "evening/02.ogg",
+   "text": "sun's down. my time."
+  },
+  {
+   "file": "evening/03.ogg",
+   "text": "getting late. wrap it up?"
+  }
+ ],
+ "late-night": [
+  {
+   "file": "late-night/01.ogg",
+   "text": "it's late, choom. go to sleep."
+  },
+  {
+   "file": "late-night/02.ogg",
+   "text": "still up? me too. always."
+  },
+  {
+   "file": "late-night/03.ogg",
+   "text": "three AM thoughts, huh?"
+  }
+ ],
+ "summoned": [
+  {
+   "file": "summoned/01.ogg",
+   "text": "you called?"
+  },
+  {
+   "file": "summoned/02.ogg",
+   "text": "at your service, choom."
+  },
+  {
+   "file": "summoned/03.ogg",
+   "text": "here! what's up?"
+  }
+ ],
+ "screen-possess": [
+  {
+   "file": "screen-possess/01.ogg",
+   "text": "your screen is mine!"
+  },
+  {
+   "file": "screen-possess/02.ogg",
+   "text": "shh. don't look away."
+  },
+  {
+   "file": "screen-possess/03.ogg",
+   "text": "this whole system is mine now."
+  }
+ ],
+ "fullscreen-app": [
+  {
+   "file": "fullscreen-app/01.ogg",
+   "text": "fullscreen? I'll be quiet. promise."
+  },
+  {
+   "file": "fullscreen-app/02.ogg",
+   "text": "I'll hide for a bit."
+  },
+  {
+   "file": "fullscreen-app/03.ogg",
+   "text": "big screen time. I'll wait."
+  }
+ ]
+}

@@ -182,6 +182,12 @@ function sendCommand(name, payload = {}) {
   overlay?.webContents.send('capri:command', { name, ...payload });
 }
 
+// One of her voice lines (assets/voice/lines.json keys), from anywhere in here: speech.js picks a
+// take and decides whether she says it now. Harmless if the overlay isn't there yet.
+function say(key, extra = {}) {
+  overlay?.webContents.send('capri:say', { key, ...extra });
+}
+
 // Ctrl+Alt+C: she folds herself away into her biochip in the corner, or comes back out of it.
 function toggleVisible(force) {
   const visible = typeof force === 'boolean' ? force : !config.load().visible;
@@ -288,6 +294,21 @@ function rebuildTray() {
       label: t.sound,
       submenu: [
         { label: t.mute, type: 'checkbox', checked: cfg.muted, click: (item) => updateConfig({ muted: item.checked }) },
+        { type: 'separator' },
+        // her spoken lines (renderer/js/speech.js)
+        { label: t.voice, type: 'checkbox', checked: cfg.voice !== false, click: (item) => updateConfig({ voice: item.checked }) },
+        {
+          label: t.voiceVolume,
+          submenu: [[t.volLow, 0.45], [t.volMid, 0.8], [t.volHigh, 1]].map(([label, voiceVolume]) => ({
+            label, type: 'radio', checked: Math.abs((cfg.voiceVolume ?? 0.8) - voiceVolume) < 0.01, click: () => updateConfig({ voiceVolume }),
+          })),
+        },
+        {
+          label: t.chattiness,
+          submenu: ['quiet', 'normal', 'chatty'].map((chattiness) => ({
+            label: t[chattiness], type: 'radio', checked: (cfg.chattiness || 'normal') === chattiness, click: () => updateConfig({ chattiness }),
+          })),
+        },
         { type: 'separator' },
         {
           label: t.soundsDir,
@@ -668,6 +689,10 @@ async function debugHandler(route, body) {
     sendCommand(body.name, body);
     return { ok: true };
   }
+  if (route === 'say') { // a voice line by key; force (default): past her chattiness and gaps
+    say(body.key, { force: body.force !== false });
+    return { ok: true };
+  }
   if (route === 'reload') {
     overlay.webContents.reloadIgnoringCache();
     return { ok: true };
@@ -792,6 +817,9 @@ function main() {
     // after sleep or a locked screen, once Windows has settled
     powerMonitor.on('resume', () => setTimeout(rearmOverlay, 2000));
     powerMonitor.on('unlock-screen', () => setTimeout(rearmOverlay, 1000));
+    // the charger plugged in or pulled out (her voice lines)
+    powerMonitor.on('on-ac', () => say('charger-in'));
+    powerMonitor.on('on-battery', () => say('charger-out'));
   });
 
   app.on('will-quit', () => {
