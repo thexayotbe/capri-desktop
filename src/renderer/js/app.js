@@ -13,6 +13,8 @@ import { linesFor } from './lines.js';
 import { pick, fmt, reducedMotion } from './util.js';
 
 const host = window.host;
+// one of her lines by key (CONTRACT.md): whoever voices them listens for it
+const say = (key) => document.dispatchEvent(new CustomEvent('capri:say', { detail: { key } }));
 
 function loadImage(src) {
   return new Promise((resolve, reject) => {
@@ -435,6 +437,19 @@ async function boot() {
         else if (cmd.topic === 'menu') guide.menu();
         else if (typeof guide[cmd.topic] === 'function') guide.scene(() => guide[cmd.topic]());
         break;
+      case 'summon': { // her shortcut (Ctrl+Option+C on macOS): she comes to the pointer, out of her biochip if need be
+        if (capri.stowed) {
+          host.setConfig({ visible: true });
+          await capri.unstow();
+        }
+        capri.wake();
+        if (capri.stance === 'peek') await capri.unpeek();
+        const cursor = await host.cursor().catch(() => null);
+        if (!cursor?.inside) break;
+        say('summoned');
+        await capri.summon(cursor);
+        break;
+      }
       case 'stow': // Ctrl+Alt+C: into her biochip, or back out
         if (cmd.on) capri.stow();
         else capri.unstow();

@@ -27,6 +27,9 @@ contextBridge.exposeInMainWorld('host', {
   claudeFound: () => ipcRenderer.invoke('claude:found'),
   openClaudeHelp: () => ipcRenderer.send('claude:help'),
   windowsNow: () => ipcRenderer.invoke('windows:get'),
+  // macOS: the app in front, { name, bundleId, category, fullscreen } (CONTRACT.md, platform IPC)
+  onAppSwitch: on('capri:app-switch'),
+  frontApp: () => ipcRenderer.invoke('app:front'),
   trayPlace: () => ipcRenderer.invoke('guide:tray'),
   openClaudeFolder: () => ipcRenderer.invoke('guide:claudeFolder'),
   copyImage: (rect) => ipcRenderer.invoke('panel:copy', rect),

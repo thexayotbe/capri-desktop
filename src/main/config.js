@@ -30,6 +30,8 @@ const DEFAULTS = {
   rest: 'corner',    // where she rests when nothing's going on: 'corner', or 'taskbar' (sitting on it)
   motion: 'auto',    // her animations: 'auto' (like Windows' animation effects), 'full' or 'reduced'
   motionAsked: false, // she asked once, Windows' animations being off, whether to move anyway
+  // the shortcut that calls her to the pointer ('': none). macOS: Ctrl+Option+C (her hide / show one is Ctrl+Option+Shift+C there)
+  summonKey: process.platform === 'darwin' ? 'Control+Alt+C' : '',
   render: 'auto',   // how her window is drawn: 'auto', 'gl' (OpenGL) or 'software' (no graphics card), for PCs that show it black
 };
 
