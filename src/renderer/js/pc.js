@@ -3,6 +3,7 @@
 // Her menu › React to my PC turns it off.
 
 import { pick, fmt } from './util.js';
+import { say as speak } from './speech.js'; // her voice pack: one clip per reaction
 
 const HOT = 85; // % of the processor, for HOT_FOR
 const HOT_FOR = 15000;
@@ -15,7 +16,7 @@ const GAME_OVER = 8000;   // and gone this long: you're done
 const PHONE = /phone|iphone|apple|galaxy|samsung|pixel|xiaomi|redmi|poco|oneplus|huawei|honor|motorola|oppo|vivo|realme|nokia|xperia|android|mobile|t[ée]l[ée]phone|celular|телефон/i;
 const PAD = /controller|gamepad|manette|mando|controle|xbox|dualsense|dualshock|joy-?con|геймпад/i;
 
-// what was plugged in, from the name and the class Windows gives it
+// what was plugged in, from the name and the class Windows gives it (on macOS, windows.js: '' or 'Volume')
 function kindOf({ name = '', class: cls = '' }) {
   if (PAD.test(name)) return 'controller';
   if (cls === 'DiskDrive' || cls === 'Volume') return 'drive'; // USB sticks: by their drive letter
@@ -88,6 +89,7 @@ export class Pc {
     this.capri.wake();
     this.say(fmt(pick(this.t.hot), { cpu }), 'wide', 5000);
     this.voice.play('charge');
+    speak('cpu-hot');
     if (await this.whenFree()) this.capri.perform('overheat');
   }
 
@@ -110,9 +112,11 @@ export class Pc {
         if (charging) {
           this.warned = 1;
           this.say(pick(this.t.charging), 'laugh', 3500);
+          speak('charger-in');
           this.capri.recharge();
         } else {
           this.say(pick(this.t.unplugged), 'aside', 3500);
+          speak('charger-out');
         }
       }
     }
@@ -122,6 +126,7 @@ export class Pc {
     this.warned = at;
     this.capri.wake();
     this.say(fmt(pick(at === 0.05 ? this.t.critical : this.t.low), { level: Math.round(level * 100) }), 'aside', 6000);
+    speak('battery-low');
     if (await this.whenFree()) this.capri.drain();
   }
 
@@ -132,6 +137,7 @@ export class Pc {
       if (navigator.onLine || !this.enabled) return;
       this.cutOff = true;
       this.voice.play('error');
+      speak('net-down');
       this.say(pick(this.t.offline), 'wide', 5000);
       this.capri.hurt();
     }, 4000);
@@ -142,11 +148,13 @@ export class Pc {
     if (!this.cutOff) return;
     this.cutOff = false;
     this.voice.play('hello');
+    speak('net-up');
     this.say(pick(this.t.online), 'laugh', 3500);
     if (this.capri.free) this.capri.perform('hop');
   }
 
-  // what windows.ps1 sees: USB sticks by letter, devices plugged in or out, the game in front
+  // what windows.ps1 sees (on macOS, the helper through windows.js): USB sticks by letter (or a
+  // Mac's disk name), devices plugged in or out, the game in front
   onWindows({ usb = [], plug = null, game = null }) {
     if (!this.enabled) {
       this.drives = usb;
@@ -177,6 +185,7 @@ export class Pc {
   async stick(drive) {
     this.capri.wake();
     this.say(fmt(pick(this.t.usb), { drive }), 'look', 2500);
+    speak('usb-in');
     if (!this.quiet || !(await this.whenFree())) return;
     const { w, h } = this.capri.view;
     if (await this.capri.visit({ x: w - 140, y: h - 6 })) this.say(pick(this.t.usbBack), 'smug', 4500);
@@ -189,6 +198,7 @@ export class Pc {
     this.plugAt = Date.now();
     const lines = plug.in ? this.t.plugIn : this.t.plugOut;
     this.capri.wake();
+    if (plug.in) speak('device-in'); // before the zap's own line
     // plugged in: a jolt of lightning down to where it came in (by the clock), before she talks
     if (plug.in && this.capri.free) {
       const { w, h } = this.capri.view;
@@ -207,6 +217,7 @@ export class Pc {
       if (this.capri.stowed || this.capri.mode === 'alert') return;
       this.capri.wake();
       this.say(fmt(pick(this.t.game), { game: g.name }), 'smug', 3000);
+      speak('game-start');
       setTimeout(() => {
         if (this.game !== g || g.gone || this.capri.stowed || this.capri.mode === 'alert') return;
         g.put = true;
@@ -217,7 +228,10 @@ export class Pc {
     if (g.gone && now - g.gone >= GAME_OVER) {
       this.game = null;
       if (g.put && this.capri.stowed && this.wantsOut()) {
-        this.capri.unstow().then(() => this.say(pick(this.t.gameBack), 'look', 5000));
+        this.capri.unstow().then(() => {
+          this.say(pick(this.t.gameBack), 'look', 5000);
+          speak('game-end');
+        });
       }
     }
   }

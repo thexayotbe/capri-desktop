@@ -18,6 +18,7 @@ export class Voice {
     this.volume = 0.7;
     this.custom = new Map(); // cue -> AudioBuffer
     this.lastBlip = 0;
+    this.hushBlips = false; // she's speaking a line (speech.js): no blips over her voice
   }
 
   ensure() {
@@ -35,6 +36,12 @@ export class Voice {
     }
     shaper.curve = curve;
     this.master.connect(shaper).connect(ctx.destination);
+    // a short digital room under everything, as in her video's soundtrack (capri-virus-saver score.js)
+    const room = ctx.createConvolver();
+    room.buffer = this.makeRoom(0.9, 3.2);
+    const wet = ctx.createGain();
+    wet.gain.value = 0.16;
+    this.master.connect(room).connect(wet).connect(shaper);
     this.noise = this.makeNoise();
     return ctx;
   }
@@ -96,6 +103,22 @@ export class Voice {
     fn?.();
   }
 
+  // filtered noise with a power decay and a 12 ms pre-delay
+  makeRoom(sec, decay) {
+    const ctx = this.ctx;
+    const n = Math.round(sec * ctx.sampleRate);
+    const buf = ctx.createBuffer(2, n, ctx.sampleRate);
+    for (let c = 0; c < 2; c++) {
+      const d = buf.getChannelData(c);
+      let lp = 0;
+      for (let i = 0; i < n; i++) {
+        lp += (Math.random() * 2 - 1 - lp) * (0.25 + 0.7 * Math.exp(-i / (ctx.sampleRate * 0.05)));
+        d[i] = i < ctx.sampleRate * 0.012 ? 0 : lp * Math.pow(1 - i / n, decay);
+      }
+    }
+    return buf;
+  }
+
   makeNoise() {
     const ctx = this.ctx;
     const buf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
@@ -151,6 +174,7 @@ export class Voice {
   }
 
   blip(mood = 'talk') {
+    if (this.hushBlips) return;
     const now = performance.now();
     if (now - this.lastBlip < 45) return;
     this.lastBlip = now;
@@ -278,6 +302,9 @@ export class Voice {
     const o = this.osc('triangle', 150, t, 0.14, 0.22);
     o.frequency.exponentialRampToValueAtTime(48, t + 0.12);
     this.noiseBurst(t, 0.06, 0.08, 1800, 400, 1.5);
+    // a sub under it, so it has weight (score.js thud)
+    const sub = this.osc('sine', 110, t, 0.22, 0.18);
+    sub.frequency.exponentialRampToValueAtTime(38, t + 0.18);
   }
 
   // the satellite: two soft, high pings and a shimmer
@@ -318,5 +345,8 @@ export class Voice {
     o.frequency.exponentialRampToValueAtTime(55, t + 0.3);
     this.noiseBurst(t, 0.25, 0.15, 900, 200, 1.2);
     for (let i = 0; i < 5; i++) this.noiseBurst(t + 0.05 + i * 0.05, 0.02, 0.12, 4000, 4000, 10);
+    // a digital tear on top (score.js crunch): crushed noise falling, a low square
+    this.noiseBurst(t, 0.12, 0.14, 7000, 900, 0.9);
+    this.osc('square', rand(40, 90), t, 0.12, 0.06);
   }
 }

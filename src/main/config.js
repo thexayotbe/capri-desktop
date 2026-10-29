@@ -8,10 +8,15 @@ const DEFAULTS = {
   scale: 0.6,        // sprite scale, 0.6 ≈ 250px tall
   muted: false,
   volume: 0.7,
+  voice: true,       // her spoken lines (assets/voice)
+  voiceVolume: 0.8,
+  chattiness: 'normal', // how often she speaks up: 'quiet', 'normal' or 'chatty'
   lang: 'auto',      // 'auto' follows the system language, or 'fr' / 'en'
   displayId: null,   // null = primary display
   wander: true,      // random teleports when idle
   possess: true,     // now and then she dives into the window she sits on and takes it over
+  screenPossess: true, // every 20-40 min she takes over the whole screen for a few seconds (mac-life.js)
+  macMusic: true,    // macOS: she dances while Spotify or Music plays (asks them only when they're running)
   visible: true,
   welcomed: false,   // she has introduced herself (her welcome panel)
   assistant: 'auto', // the coding assistant she watches: 'claude' or 'codex' ('auto': whichever has her hooks)
@@ -30,6 +35,8 @@ const DEFAULTS = {
   rest: 'corner',    // where she rests when nothing's going on: 'corner', or 'taskbar' (sitting on it)
   motion: 'auto',    // her animations: 'auto' (like Windows' animation effects), 'full' or 'reduced'
   motionAsked: false, // she asked once, Windows' animations being off, whether to move anyway
+  // the shortcut that calls her to the pointer ('': none). macOS: Ctrl+Option+C (her hide / show one is Ctrl+Option+Shift+C there)
+  summonKey: process.platform === 'darwin' ? 'Control+Alt+C' : '',
   render: 'auto',   // how her window is drawn: 'auto', 'gl' (OpenGL) or 'software' (no graphics card), for PCs that show it black
   follow: true,      // with several screens, she follows the pointer to the one you're on
   jealous: true,     // she gets jealous when she sees you on another AI (bond.js)

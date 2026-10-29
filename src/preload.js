@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld('host', {
   onConfig: on('capri:config'),
   onResize: on('overlay:resize'),
   onWindows: on('windows:update'),
+  onSay: on('capri:say'), // a voice line from the main process (speech.js)
   setInteractive: (on) => ipcRenderer.send('overlay:interactive', Boolean(on)),
   rearm: () => ipcRenderer.send('overlay:rearm'),
   cursor: () => ipcRenderer.invoke('overlay:cursor'),
@@ -29,6 +30,9 @@ contextBridge.exposeInMainWorld('host', {
   claudeFound: () => ipcRenderer.invoke('claude:found'),
   openClaudeHelp: () => ipcRenderer.send('claude:help'),
   windowsNow: () => ipcRenderer.invoke('windows:get'),
+  // macOS: the app in front, { name, bundleId, category, fullscreen } (CONTRACT.md, platform IPC)
+  onAppSwitch: on('capri:app-switch'),
+  frontApp: () => ipcRenderer.invoke('app:front'),
   trayPlace: () => ipcRenderer.invoke('guide:tray'),
   openClaudeFolder: () => ipcRenderer.invoke('guide:claudeFolder'),
   copyImage: (rect) => ipcRenderer.invoke('panel:copy', rect),
@@ -68,4 +72,6 @@ contextBridge.exposeInMainWorld('host', {
   webSearch: (query) => ipcRenderer.invoke('web:search', query),
   openSite: (address) => ipcRenderer.invoke('apps:site', address),
   focusOverlay: (on) => ipcRenderer.send('overlay:focus', Boolean(on)),
+  // mac-life.js: the music playing
+  onMusic: on('capri:music'),
 });

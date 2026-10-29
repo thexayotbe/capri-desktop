@@ -10,6 +10,7 @@
 import { SpriteRenderer, SPRITE } from './sprite.js';
 import { ACTS, NEUTRAL, Player } from './acting.js';
 import { sleep, rand, pick, clamp, lerp, ease, tween, reducedMotion, today } from './util.js';
+import { say as speak } from './speech.js';
 
 const ON_TWOS = 1000 / 12;
 const ON_ONES = 1000 / 24;
@@ -342,6 +343,7 @@ export class Capri {
     const win = this.perchWin(this.perch.id);
     const dx = win ? clamp(this.perch.dx, 50, win.w - 60) : 0;
     if (!win || !this.canSit(win) || this.covered(win, win.x + dx)) {
+      if (this.perch.id !== 'taskbar') speak('window-fall');
       this.fall(); // the ledge is gone (closed, minimized, maximized or covered)
       return;
     }
@@ -656,6 +658,7 @@ export class Capri {
     const prev = this.mode;
     this.mode = mode;
     if (mode === 'sleep') this.sleptAt = now;
+    if (mode === 'sleep' || prev === 'sleep') speak(mode === 'sleep' ? 'sleep' : 'wake');
     this.onMode?.(mode, prev);
     if (this.stance === 'stand') this.base = this.restBase();
     const p = this.p;
@@ -784,6 +787,7 @@ export class Capri {
     // from her fingertips to it
     const road = () => [this.limb(side).hand, sat.pos()];
     this.sky = { sat, road, dir, side, motes: null, surge: null, head: null };
+    speak('satellite');
     if (!big) this.onGaze?.('start');
     this.perform(big ? 'uplink' : 'gaze', dir, { reach }).then(() => {
       this.clearSky();
@@ -867,6 +871,7 @@ export class Capri {
       return clamp(Math.atan2(sh.y - y, Math.abs(x - sh.x)) + 0.52, -0.3, 1.6);
     };
     this.zapAt = { x, y, side, dir };
+    speak('zap-cursor');
     this.perform('zap', dir, { reach });
     return true;
   }
@@ -919,6 +924,7 @@ export class Capri {
         this.fireSpeak();
         break;
       case 'laugh':
+        speak('victory-laugh');
         this.fx.cutin(...this.cutinAt(this.act?.player.dir || this.towardCenter()), { kind: pick(['laugh', 'grin']) });
         break;
       case 'stare': // every eye she has, on you
@@ -1195,6 +1201,7 @@ export class Capri {
     this.busy = true;
     this.wake();
     this.onTeleport?.('start');
+    speak('teleport');
     const fromHead = await this.vanish();
     await sleep(70);
     await this.arrive(to, { ...opts, fromHead });
@@ -1294,6 +1301,7 @@ export class Capri {
     this.dormant = false;
     this.busy = true;
     this.onDoze?.('waking');
+    speak('wake');
     if (this.mode === 'sleep') this.setMode('idle');
     this.lastActivity = performance.now();
     await sleep(reducedMotion.matches ? 0 : 280);
@@ -1337,6 +1345,7 @@ export class Capri {
   }
 
   sitOn({ win, dx }) {
+    if (win.id !== 'taskbar') speak('window-sit');
     return this.teleport(this.seat(win, dx), { stance: 'sit', perch: { id: win.id, dx }, face: this.facing });
   }
 
@@ -1378,6 +1387,7 @@ export class Capri {
     this.voice.play('bolt');
     await sleep(300);
     this.voice.play(angry ? 'jealous' : 'possess');
+    speak(angry ? 'angry' : 'possess-window');
     await sleep(say ? 2600 : 1600); // a line written across it: time to read it
     taken.leave();
     await sleep(260);
@@ -1597,7 +1607,10 @@ export class Capri {
         else if (cue === 'grab') {
           this.voice.play('land'); // she slams into it
           this.voice.play('bolt');
-        } else if (cue === 'hi') this.voice.play('hello');
+        } else if (cue === 'hi') {
+          this.voice.play('hello');
+          speak('hello');
+        }
         else if (cue === 'slip') this.voice.play('teleport-out');
       },
     });
@@ -1797,6 +1810,10 @@ export class Capri {
   pickUp(down) {
     const was = this.stance;
     const spin = SPUN.has(was) ? norm(this.spin) : 0;
+    // her voice: caught on the fly, else grabbed (and again and again, she's had enough)
+    const now = performance.now();
+    this.grabs = [...(this.grabs || []).filter((t) => now - t < 20000), now];
+    speak(was === 'fly' ? 'caught' : this.grabs.length >= 3 ? 'angry' : 'grabbed');
     this.throwId += 1; // whatever was going on after a throw is over
     this.flight = null;
     this.skid = null;
@@ -1893,6 +1910,7 @@ export class Capri {
     this.spin = along;
     this.setMid(c);
     this.voice.play('throw', { power: Math.min(1, Math.hypot(vx, vy) / THROW_MAX) });
+    speak('thrown');
     this.fx.burst(c.x, c.y, { count: 8, power: 0.45, spread: 50 * s });
     this.p.glitchSeed = Math.random() * 100;
     this.p.glitch = 0.22;
@@ -2018,6 +2036,7 @@ export class Capri {
     const mid = this.flat(MID.x, MID.y);
     this.squash = { n, k: lerp(0.84, 0.56, hard), t: now, hold, rel: { x: at.x - mid.x, y: at.y - mid.y } };
     this.voice.play('crash', { power: hard });
+    if (f.hits === 1 && hard > 0.3) speak('crash-wall'); // the first hard one: she says so
     this.fx.ring(at.x, at.y, { size: lerp(0.18, 0.7, hard) });
     this.fx.burst(at.x, at.y, { count: Math.round(lerp(5, 20, hard)), power: lerp(0.3, 0.95, hard), spread: 30 });
     const rect = win ? () => this.windows.wins.find((o) => o.id === win.id) || null : null;
@@ -2410,7 +2429,7 @@ export class Capri {
   }
 
   // Let go of her: onto a ledge if her hips are right at one, otherwise she falls.
-  drop() {
+  drop({ crashed = false } = {}) {
     const s = this.scale;
     const hip = this.pos.y - (SPRITE.feet.y - SPRITE.hip) * s;
     for (const win of this.windows.wins) {
@@ -2423,8 +2442,10 @@ export class Capri {
       this.voice.play('land');
       return;
     }
-    if (this.pos.y < this.floor - 2) this.fall();
-    else this.perform('land');
+    if (this.pos.y < this.floor - 2) {
+      if (!crashed) speak('thrown');
+      this.fall();
+    } else this.perform('land');
   }
 
   // When the pointer comes close she turns around to face it and cocks her head;
@@ -2437,6 +2458,7 @@ export class Capri {
     if (this.mode === 'sleep') this.wake();
     if (now < this.nextNotice) return;
     this.nextNotice = now + 15000;
+    speak('mouse-near');
     if (this.stance === 'peek') {
       this.unpeek({ shy: true });
       return;

@@ -10,6 +10,62 @@ glitches, comments on every action, comes to find you when it needs your permiss
 
 ![Teleport, frame by frame](docs/teleport.png)
 
+## macOS fork
+
+This is a fork of [mochiiwuff/capri-desktop](https://github.com/mochiiwuff/capri-desktop) (all the credit for Capri
+goes to mochiiwuff), on the `mac-features` branch, with extra life for macOS. Run it from the source
+(`npm install && npm start`, see [Install](#from-the-source-macos-linux-developers)).
+
+**What it adds**
+
+- **She lives on your Mac**: sits on your windows and falls when they close or move (a small Swift helper reading
+  CGWindowList), on every Space and over full-screen apps, no Dock icon (she's in the menu bar).
+- **Her voice**: a spoken line for every reaction (`assets/voice/`, made with ElevenLabs), on top of her synth sounds.
+- **She notices what you're on**: browser, code / terminal, chat apps (a look, a word, now and then, rate-limited);
+  a full-screen app.
+- **She dances to your music** when Spotify or Music is playing. They're only asked when already running, never launched.
+- **The time of day**: one greeting per morning / afternoon / evening / late night; sleepier after midnight.
+- **Her PC senses on the Mac** (upstream's *She feels your PC* and *Jealous of other AIs*, fed by the Swift helper):
+  a game or launcher in front (Steam, Epic, CrossOver, Battle.net, GOG, Heroic...), a USB device plugged in, an external
+  disk mounted (disk images left out), another AI's own app (ChatGPT, Claude, Copilot...) in front. Charger, battery,
+  network and CPU work as upstream. Each reaction has its voice line.
+- **Screen possession**: every 20-40 minutes she takes over the whole screen for 2-4 seconds (RGB-split glitch,
+  "CAPRI ONLINE."). Click-through, it never blocks anything.
+- **More to do when idle**: stretches, yawns, eyes on your pointer, following it a little, peeking out from behind a
+  window, short hops.
+
+**Shortcuts**: `⌃⌥C` (Ctrl+Option+C) calls her to the pointer; `⌃⌥⇧C` (Ctrl+Option+Shift+C) puts her away / brings
+her back.
+
+**Toggles** (right-click her, or her menu-bar icon): *Sound › Her voice / Voice volume / Chattiness*, *Summon her to the
+pointer* (pick or turn off the shortcut), *Possess the screen* (now), *Take over the screen now and then*,
+*Dance to my music*, plus the upstream ones (wander, possess my windows, rest, motion...).
+
+**Permissions macOS may ask for**
+
+- **Automation** (“Capri / Electron wants to control Spotify / Music”), the first time she checks what's playing.
+  Say no and she just won't dance (she tells you once); change it later in *System Settings › Privacy & Security ›
+  Automation*, or turn off *Dance to my music*.
+- Nothing else: the window helper needs neither Accessibility nor Screen Recording, USB / disk detection uses IOKit /
+  NSWorkspace notifications without a permission.
+
+**Regenerating her voice** (needs an [ElevenLabs](https://elevenlabs.io) API key, `ffmpeg` with libopus): the lines and
+the voice id are in `tools/voice/lines.json`. Put your key in a file outside the repo (never commit it), then
+
+```bash
+tools/voice/tts.sh /path/to/elevenlabs-key.txt [key ...]   # fetches only the missing takes into tools/voice/raw/ (git-ignored)
+node tools/voice/process.mjs [key ...]                     # trims, stutters, encodes them into assets/voice/<key>/NN.ogg
+```
+
+Delete a take in `tools/voice/raw/<key>/` to re-take it.
+
+For testing, `npm run dev` adds `--dev` routes on `127.0.0.1:47823`: `POST /debug/say {"key":"…"}`,
+`/debug/helper` (fake app switches, quits, USB devices, disks), `/debug/state`, and `/debug/command` with
+`{"name":"macLife","do":"pc"|"music"|"react"|"greet"|"idle"|"state",…}`. `CAPRI_PORT` and `CAPRI_USER_DATA` run a second
+copy next to your own.
+
+Same license as upstream: [PolyForm Noncommercial 1.0.0](LICENSE), free, never for sale.
+
 ## What she does
 
 - **When she starts**: she grabs your screen. Its edges crackle red, her left hand slams onto its edge, then her
@@ -38,7 +94,7 @@ glitches, comments on every action, comes to find you when it needs your permiss
   the summary (`12 actions · 3 files changed · 2m 14s`) and Claude's last sentence.
 - **When Claude answers and you're on another window**: she shows you its whole answer, in a wider panel that
   scrolls (paragraphs, lists and code kept). It goes away when you're back on Claude's window, or when you click it.
-  Claude's window is the one you typed your prompt in. Windows only, like the window tracking.
+  Claude's window is the one you typed your prompt in. Windows and macOS, like the window tracking.
 - **The rest of the time**: she floats, her mane sways and sheds shards, she drifts from one corner to another,
   turns around and cocks her head when your mouse comes near (or, little menace, zaps it with red lightning and a sly grin),
   looks up at the satellite, and falls asleep after 10 quiet minutes.
@@ -99,8 +155,17 @@ glitches, comments on every action, comes to find you when it needs your permiss
 
 ![Asleep down to her mask, waking up, and put away bottom left](docs/sleep.png)
 
-Window tracking is Windows-only for now (a tiny PowerShell helper reads window positions, never their contents; the title of the one in front is only used to spot another AI, see "She gets attached", and its program's folder to tell a game; the USB sticks plugged in are seen by their drive letter, other devices by the name Windows gives them).
-On macOS and Linux she still floats, peeks, falls and wanders.
+Window tracking works on Windows (a tiny PowerShell helper) and macOS (a tiny Swift helper reading CGWindowList):
+window positions and owners only, never their contents. On Windows the title of the one in front is only used to spot another AI,
+see "She gets attached", and its program's folder to tell a game; the USB sticks plugged in are seen by their drive letter,
+other devices by the name Windows gives them. On macOS there are no titles at all (no Accessibility or Screen Recording permission):
+another AI is spotted by its own app's name (ChatGPT, Claude, Copilot…, not a browser tab), a game by its app,
+external disks by their name and USB devices by the name IOKit gives them.
+On Linux she still floats, peeks, falls and wanders.
+
+On macOS she lives in the menu bar (no Dock icon), on every Space and over full-screen apps.
+**Ctrl+Option+C** calls her to the pointer (her menu › **Summon her to the pointer** picks another shortcut, or none);
+putting her away is **Ctrl+Option+Shift+C** there.
 
 ### She shows you around
 
@@ -295,9 +360,11 @@ npm install
 npm start
 ```
 
-Keep that terminal open while she runs. Not tested on macOS or Linux yet: she should start, but the window tricks
-(sitting on your windows, possessing them, showing Claude's answer when you're elsewhere) are Windows-only, and on Linux
-the transparent overlay works best on X11 (Wayland can struggle with click-through windows).
+Keep that terminal open while she runs. On macOS the window helper (`src/main/mac/capri-helper`, prebuilt) is rebuilt
+from its source with `npm run build:mac-helper` (Xcode command line tools); `npm run dist:mac` makes a `.dmg`.
+Not tested on Linux yet: she should start, but the window tricks (sitting on your windows, possessing them, showing
+Claude's answer when you're elsewhere) are Windows and macOS only, and the transparent overlay works best on X11
+(Wayland can struggle with click-through windows).
 
 ### Hook her up to Claude Code by hand
 
@@ -477,7 +544,9 @@ tools/build-sprite.py    rebuilds the sprite from the original cut-out (Python +
 tools/build-cutins.py    cuts the cut-ins and her faces out of frames of the show
 tools/build-intro.py     cuts her intro's close-ups out of their background, all the same way
 src/main/                Electron: full-screen transparent click-through window, tray, local HTTP bridge
-  windows.js / .ps1      where the other windows are (Windows only), so she can sit on them
+  windows.js / .ps1      where the other windows are (Windows, macOS), so she can sit on them
+  mac/capri-helper.swift macOS: the windows (CGWindowList), the app in front (NSWorkspace), disks and USB devices, as JSON lines
+  appkind.js             what kind of app is in front: browser, code, chat, game or other
   ollama.js              her chat: the local model through Ollama, or one of its cloud models
   apps.js                closing an app you asked her to close (after your click)
 src/renderer/js/

@@ -18,7 +18,9 @@
     "hooks:agy:uninstall": "node scripts/install-hooks-agy.js --uninstall",
     "check:llm": "node scripts/check-llm.js",
     "test:hooks": "node --test tests/hooks.test.js",
-    "dist": "electron-builder --win"
+    "dist": "electron-builder --win",
+    "build:mac-helper": "node scripts/build-mac-helper.js",
+    "dist:mac": "node scripts/build-mac-helper.js --if-stale && electron-builder --mac"
   },
   "keywords": [
     "claude-code",
@@ -52,11 +54,20 @@
     ],
     "asarUnpack": [
       "hooks/**",
-      "src/main/windows.ps1"
+      "src/main/windows.ps1",
+      "src/main/mac/capri-helper"
     ],
     "win": {
       "target": "nsis",
       "icon": "assets/icons/capri.ico"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "assets/icons/capri.png",
+      "category": "public.app-category.entertainment",
+      "extendInfo": {
+        "LSUIElement": true
+      }
     },
     "nsis": {
       "oneClick": true,

@@ -3,12 +3,14 @@ import { FxLayer, GRAB_FRAMES } from './fx.js';
 import { Chip, Mask } from './chip.js';
 import { Panel } from './panel.js';
 import { Voice } from './voice.js';
+import { Speech, say } from './speech.js';
 import { Brain } from './brain.js';
 import { Guide } from './guide.js';
 import { Mission } from './mission.js';
 import { Chat } from './chat.js';
 import { Setup } from './setup.js';
 import { Custom } from './custom.js';
+import { MacLife } from './mac-life.js';
 import { Bond, Jealousy } from './bond.js';
 import { Reminders, clock } from './reminders.js';
 import { Look } from './look.js';
@@ -88,6 +90,10 @@ async function boot() {
     fx,
     voice,
   });
+  // her spoken lines: 'capri:say' events from anywhere, and from main.js
+  const speech = new Speech({ voice, capri });
+  speech.configure(config);
+  host.onSay?.((msg) => speech.say(msg?.key, msg || {}));
   capri.wander = config.wander;
   capri.possessWindows = config.possess;
   capri.restOn = config.rest || 'corner';
@@ -234,6 +240,8 @@ async function boot() {
   const custom = new Custom({ guide, host, brain, capri, voice });
   guide.custom = custom;
   brain.custom = mine(config);
+  // More life (mac-life.js): app switches, music, the time of day, your computer, her screen takeover
+  const life = new MacLife({ capri, panel, fx, voice, host, brain, guide });
 
   // How close she is to you (bond.js), her jealousy of your other AIs, the reminders she keeps.
   const bond = new Bond({ host, data: config.bond });
@@ -593,6 +601,7 @@ async function boot() {
 
   host.onConfig((cfg) => {
     voice.configure(cfg);
+    speech.configure(cfg);
     jealousy.enabled = cfg.jealous !== false;
     followOn = cfg.follow !== false;
     look.configure(cfg);
@@ -720,6 +729,19 @@ async function boot() {
         else if (cmd.topic === 'menu') guide.menu();
         else if (typeof guide[cmd.topic] === 'function') guide.scene(() => guide[cmd.topic]());
         break;
+      case 'summon': { // her shortcut (Ctrl+Option+C on macOS): she comes to the pointer, out of her biochip if need be
+        if (capri.stowed) {
+          host.setConfig({ visible: true });
+          await capri.unstow();
+        }
+        capri.wake();
+        if (capri.stance === 'peek') await capri.unpeek();
+        const cursor = await host.cursor().catch(() => null);
+        if (!cursor?.inside) break;
+        say('summoned');
+        await capri.summon(cursor);
+        break;
+      }
       case 'stow': // Ctrl+Alt+C: into her biochip, or back out
         if (cmd.on) capri.stow();
         else capri.unstow();
@@ -785,7 +807,10 @@ async function boot() {
   // (put away last time: she starts in her biochip)
   if (config.visible === false) capri.stowNow();
   else if (intro) await capri.intro(capri.spot('post'));
-  else await capri.materialize(capri.spot('post'));
+  else {
+    await capri.materialize(capri.spot('post'));
+    say('hello');
+  }
   // Windows has its animations off and she's following it: she barely moves. The first time, she
   // says so and asks whether to move anyway (her menu › Animations changes it later).
   if (reducedMotion.setting === 'auto' && reducedMotion.system && !config.motionAsked) {
